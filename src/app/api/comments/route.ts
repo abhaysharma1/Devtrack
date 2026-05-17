@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { commentSchema } from "@/validators/comment"
+import { commentSchema, paginationSchema } from "@/validators"
 import { commentService } from "@/services/comment.service"
 import { ZodError } from "zod"
 
@@ -35,6 +35,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "projectId query param required" }, { status: 400 })
   }
 
-  const comments = await commentService.getComments(projectId)
-  return NextResponse.json(comments)
+  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
+  const result = await commentService.getComments(projectId, pagination)
+  return NextResponse.json(result)
 }

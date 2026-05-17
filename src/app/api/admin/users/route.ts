@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { createUserSchema } from "@/validators/user"
+import { createUserSchema, paginationSchema } from "@/validators"
 import { userService } from "@/services/user.service"
 import { ZodError } from "zod"
 
@@ -13,9 +13,10 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const search = url.searchParams.get("search") || ""
   const role = url.searchParams.get("role") || ""
+  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
 
-  const users = await userService.listUsers({ search, role })
-  return NextResponse.json(users)
+  const result = await userService.listUsers({ search, role }, pagination)
+  return NextResponse.json(result)
 }
 
 export async function POST(req: Request) {

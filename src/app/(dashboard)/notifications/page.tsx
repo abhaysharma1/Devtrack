@@ -23,17 +23,52 @@ export default function NotificationsPage() {
   const router = useRouter()
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | undefined>()
+  const [total, setTotal] = useState(0)
   const [markingAll, setMarkingAll] = useState(false)
 
   useEffect(() => {
-    fetch("/api/notifications")
-      .then((res) => res.json())
-      .then((data) => {
-        setNotifications(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
+    fetchNotifications(true)
+
+    const eventSource = new EventSource("/api/notifications/stream")
+    eventSource.addEventListener("notification", (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        setNotifications((prev) => [data, ...prev])
+        setTotal((prev) => prev + 1)
+      } catch { /* ignore */ }
+    })
+    eventSource.onerror = () => eventSource.close()
+    return () => eventSource.close()
   }, [])
+
+  async function fetchNotifications(reset = false) {
+    if (reset) setLoading(true)
+    else setLoadingMore(true)
+    try {
+      const params = new URLSearchParams()
+      if (!reset && nextCursor) params.set("cursor", nextCursor)
+      params.set("limit", "50")
+      const res = await fetch(`/api/notifications?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (reset) {
+          setNotifications(data.items)
+          setNextCursor(data.nextCursor)
+          setTotal(data.total)
+        } else {
+          setNotifications((prev) => [...prev, ...data.items])
+          setNextCursor(data.nextCursor)
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }
 
   async function markAllRead() {
     setMarkingAll(true)
@@ -127,6 +162,14 @@ export default function NotificationsPage() {
                 </div>
               ))}
             </div>
+            {nextCursor && (
+              <div className="flex justify-center border-t p-4">
+                <Button variant="outline" size="sm" onClick={() => fetchNotifications(false)} disabled={loadingMore}>
+                  {loadingMore ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                  {loadingMore ? "Loading..." : `Load more (${notifications.length}/${total})`}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

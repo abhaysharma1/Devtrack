@@ -10,12 +10,12 @@ export const milestoneRepository = {
     return prisma.milestone.findMany({ where: { projectId } })
   },
 
-  async create(data: Prisma.MilestoneCreateInput) {
-    return prisma.milestone.create({ data })
+  async create(data: Record<string, unknown>) {
+    return prisma.milestone.create({ data: data as Prisma.MilestoneCreateInput })
   },
 
-  async update(id: string, data: Prisma.MilestoneUpdateInput) {
-    return prisma.milestone.update({ where: { id }, data })
+  async update(id: string, data: Record<string, unknown>) {
+    return prisma.milestone.update({ where: { id }, data: data as Prisma.MilestoneUpdateInput })
   },
 
   async delete(id: string) {

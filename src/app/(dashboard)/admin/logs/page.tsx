@@ -12,7 +12,7 @@ export default async function AdminLogsPage() {
 
   const logs = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: 200,
   })
 
   return (

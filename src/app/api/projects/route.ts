@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { projectSchema } from "@/validators/project"
+import { paginationSchema } from "@/validators/common"
 import { projectService } from "@/services/project.service"
 import { ZodError } from "zod"
 
@@ -24,10 +25,13 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const projects = await projectService.getProjects(session.user.role, session.user.id)
-  return NextResponse.json(projects)
+  const url = new URL(req.url)
+  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
+
+  const result = await projectService.getProjects(session.user.role, session.user.id, pagination)
+  return NextResponse.json(result)
 }

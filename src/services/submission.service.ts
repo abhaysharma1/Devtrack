@@ -3,6 +3,7 @@ import { notificationRepository } from "@/repositories/notification.repository"
 import { activityLogRepository } from "@/repositories/activity-log.repository"
 import { milestoneRepository } from "@/repositories/milestone.repository"
 import { projectRepository } from "@/repositories/project.repository"
+import { pushEvent } from "@/lib/sse"
 import type { SubmitInput, GradeInput } from "@/validators/submission"
 
 export const submissionService = {
@@ -41,13 +42,14 @@ export const submissionService = {
     })
 
     if (project.class?.teacherId) {
-      await notificationRepository.create({
+      const notification = await notificationRepository.create({
         type: "STATUS_CHANGE",
         title: "Milestone Submitted",
         message: `${userName} submitted "${milestone.title}" for ${project.title}`,
         recipientId: project.class.teacherId,
         senderId: userId,
       })
+      pushEvent(project.class.teacherId, "notification", notification)
     }
 
     return submission
@@ -77,27 +79,29 @@ export const submissionService = {
 
     await activityLogRepository.create({
       type: activityType,
-      description: `${activityDesc} milestone "${submission.milestone.title}" with grade ${input.grade}`,
-      projectId: submission.milestone.projectId,
+      description: `${activityDesc} milestone "${(submission as any).milestone.title}" with grade ${input.grade}`,
+      projectId: (submission as any).milestone.projectId,
       userId,
     })
 
-    await notificationRepository.create({
+    const notification = await notificationRepository.create({
       type: activityType,
       title: `Milestone ${milestoneStatus === "APPROVED" ? "Approved" : "Rejected"}`,
-      message: `Your milestone "${submission.milestone.title}" was ${activityDesc} with grade ${input.grade}`,
+      message: `Your milestone "${(submission as any).milestone.title}" was ${activityDesc} with grade ${input.grade}`,
       recipientId: submission.userId,
       senderId: userId,
     })
+    pushEvent(submission.userId, "notification", notification)
 
-    const milestones = await milestoneRepository.findManyByProject(submission.milestone.projectId)
+    const ms = (submission as any).milestone
+    const milestones = await milestoneRepository.findManyByProject(ms.projectId)
     const totalWeight = milestones.reduce((s, m) => s + m.weight, 0)
     const completedWeight = milestones
       .filter((m) => m.status === "APPROVED")
       .reduce((s, m) => s + m.weight, 0)
     const completionPct = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0
 
-    await projectRepository.update(submission.milestone.projectId, { completionPct })
+    await projectRepository.update(ms.projectId, { completionPct })
 
     return updated
   },

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { paginationSchema } from "@/validators/common"
 import { notificationService } from "@/services/notification.service"
 
 export async function GET(req: Request) {
@@ -14,8 +15,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ count: unreadCount })
   }
 
-  const notifications = await notificationService.listNotifications(session.user.id)
-  return NextResponse.json(notifications)
+  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
+  const result = await notificationService.listNotifications(session.user.id, pagination)
+  return NextResponse.json(result)
 }
 
 export async function PATCH(req: Request) {

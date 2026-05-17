@@ -30,7 +30,7 @@ export function Navbar() {
   useEffect(() => {
     async function fetchUnreadCount() {
       try {
-        const res = await fetch("/api/notifications?unreadOnly=true&count=true")
+        const res = await fetch("/api/notifications?count=true")
         if (res.ok) {
           const data = await res.json()
           setUnreadCount(data.count)
@@ -38,8 +38,15 @@ export function Navbar() {
       } catch { /* ignore */ }
     }
     fetchUnreadCount()
-    const interval = setInterval(fetchUnreadCount, 30000)
-    return () => clearInterval(interval)
+
+    const eventSource = new EventSource("/api/notifications/stream")
+    eventSource.addEventListener("notification", () => {
+      setUnreadCount((prev) => prev + 1)
+    })
+    eventSource.onerror = () => {
+      eventSource.close()
+    }
+    return () => eventSource.close()
   }, [])
 
   return (

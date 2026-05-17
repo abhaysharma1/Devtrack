@@ -18,6 +18,7 @@ import {
 import { getInitials, getStatusColor, formatDate, formatDateRelative } from "@/lib/utils"
 import { toast } from "sonner"
 import { UploadButton } from "@/lib/uploadthing"
+import { GitHubRepoManager } from "@/components/features/github/github-repo-manager"
 import type { Milestone, MilestoneSubmission, Comment, GitHubRepository, Group, GroupMember, FileAttachment } from "@prisma/client"
 
 interface StudentProjectDetailProps {
@@ -340,19 +341,7 @@ export function StudentProjectDetail({ project, userId }: StudentProjectDetailPr
             </Card>
           )}
 
-          {project.repositories.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle>GitHub</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {project.repositories.map((repo) => (
-                  <a key={repo.id} href={repo.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline">
-                    <GitBranch className="h-3 w-3" /> {repo.fullName}
-                  </a>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          <GitHubRepoManager projectId={project.id} repositories={project.repositories} />
 
           <Card>
             <CardHeader><CardTitle>Quick Stats</CardTitle></CardHeader>

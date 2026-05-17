@@ -52,7 +52,7 @@ export function MilestoneCreateForm({ projectId }: MilestoneCreateFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Milestone</Button>
       </DialogTrigger>
       <DialogContent>

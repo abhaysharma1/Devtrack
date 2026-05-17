@@ -37,6 +37,7 @@ model User {
   createdClasses    Class[]               @relation("ClassCreator")
   taughtClasses     Class[]               @relation("ClassTeacher")
   createdGroups     Group[]               @relation("GroupCreator")
+  groupJoinRequests GroupJoinRequest[]
   fileAttachments   FileAttachment[]
 
   @@index([email])
@@ -130,22 +131,25 @@ model ClassMembership {
 }
 
 model Group {
-  id        String   @id @default(uuid())
-  name      String
-  classId   String
-  projectId String?  @unique
-  creatorId String
-  maxSize   Int      @default(5)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  classId    String
+  projectId  String?  @unique
+  creatorId  String
+  maxSize    Int      @default(5)
+  inviteCode String   @unique @default(cuid())
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  class   Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
-  creator User          @relation("GroupCreator", fields: [creatorId], references: [id])
-  project Project?      @relation(fields: [projectId], references: [id])
-  members GroupMember[]
+  class        Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator      User                @relation("GroupCreator", fields: [creatorId], references: [id])
+  project      Project?            @relation(fields: [projectId], references: [id])
+  members      GroupMember[]
+  joinRequests GroupJoinRequest[]
 
   @@index([classId])
+  @@index([inviteCode])
   @@map("groups")
 }
 
@@ -163,6 +167,23 @@ model GroupMember {
   @@index([groupId])
   @@index([userId])
   @@map("group_members")
+}
+
+model GroupJoinRequest {
+  id        String   @id @default(uuid())
+  groupId   String
+  userId    String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_join_requests")
 }
 
 model Project {

@@ -1,5 +1,7 @@
 import { classRepository } from "@/repositories/class.repository"
+import { paginateResponse } from "@/repositories/base.repository"
 import type { ClassInput } from "@/validators/class"
+import type { PaginationInput } from "@/validators/common"
 
 export const classService = {
   async createClass(input: ClassInput, userId: string) {
@@ -15,8 +17,11 @@ export const classService = {
     })
   },
 
-  async getClasses(role: string, userId: string) {
+  async getClasses(role: string, userId: string, pagination?: PaginationInput) {
     const where = role === "ADMIN" ? undefined : { teacherId: userId }
-    return classRepository.findMany(where)
+    const items = await classRepository.findMany(where, pagination)
+    if (!pagination) return items
+    const total = await classRepository.count(where)
+    return paginateResponse(items, total, pagination)
   },
 }

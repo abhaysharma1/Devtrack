@@ -1,7 +1,9 @@
 import { projectRepository } from "@/repositories/project.repository"
 import { activityLogRepository } from "@/repositories/activity-log.repository"
 import { classRepository } from "@/repositories/class.repository"
+import { paginateResponse } from "@/repositories/base.repository"
 import type { ProjectInput } from "@/validators/project"
+import type { PaginationInput } from "@/validators/common"
 
 export const projectService = {
   async createProject(input: ProjectInput, userId: string) {
@@ -29,8 +31,11 @@ export const projectService = {
     return project
   },
 
-  async getProjects(role: string, userId: string) {
+  async getProjects(role: string, userId: string, pagination?: PaginationInput) {
     const where = role === "STUDENT" ? { ownerId: userId } : undefined
-    return projectRepository.findMany(where)
+    const items = await projectRepository.findMany(where, pagination)
+    if (!pagination) return items
+    const total = await projectRepository.count(where)
+    return paginateResponse(items, total, pagination)
   },
 }

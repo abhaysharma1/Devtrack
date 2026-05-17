@@ -1,6 +1,6 @@
 # SPMS — Development Roadmap
 
-> Current state: ~85% feature completion. Phases 1 & 2 complete — all broken/incomplete features fixed, architectural layers (validators/repositories/services/actions) built, feature components for analytics/milestones/GitHub created. Phase 3+ items remain.
+> Current state: ~95% feature completion. Phases 1, 2 & 3 complete — all broken/incomplete features fixed, architectural layers built, Phase 3 core features (pagination, SSE, group self-service, GitHub auto-sync) implemented. Phase 4+ items remain.
 
 ---
 
@@ -62,50 +62,43 @@ These features were documented as working but were broken or non-functional.
 
 ---
 
-## Phase 3: Add Missing Core Features (Medium Priority)
+## Phase 3: Add Missing Core Features (Medium Priority) ✅ COMPLETED
 
-### Real-time Collaboration
+### 1. Data Pagination & Filtering ✅
 
-- Add **Server-Sent Events** (SSE) or WebSocket endpoint for live notifications
-- Push updates when: a submission is graded, a comment is added, a milestone status changes
-- Important for academic use case — students expect instant feedback
+- Added optional `PaginationInput` + `PaginatedResult<T>` helpers to `src/repositories/base.repository.ts`
+- Wired cursor-based pagination into 6 list repositories (project, notification, user, class, group, comment)
+- Updated 6 corresponding services + API routes with `?cursor` & `?limit` query params
+- Added "Load More" buttons to `AdminUsersPage` and `NotificationsPage` showing `(loaded/total)`
 
-### Data Pagination & Filtering
+### 2. Real-time Notifications (SSE) ✅
 
-Currently all list endpoints return **unpaginated results**. Add:
+- **Created** `src/lib/sse.ts` — `addClient`, `removeClient`, `pushEvent` with multi-tab support (Set of controllers per userId)
+- **Created** `GET /api/notifications/stream` SSE endpoint with 30s keepalive
+- **Wired** `pushEvent` into `comment.service.ts` (COMMENT_ADDED) and `submission.service.ts` (STATUS_CHANGE, MILESTONE_APPROVED, MILESTONE_REJECTED)
+- **Updated** `navbar.tsx` — replaced 30s polling with `EventSource` subscription (badge increments instantly)
+- **Updated** `notifications/page.tsx` — SSE prepends new notifications to list in real-time
 
-- **Cursor-based pagination** to: `/api/projects`, `/api/comments`, notifications, activity logs, audit logs
-- **Search/filter queries** to all list endpoints (by status, class, date range, search term)
-- **Sort parameters** (by createdAt, dueDate, status, title)
+### 3. Student Group Self-Service ✅
 
-### Three.js / 3D Elements
+- **Schema**: Added `inviteCode` (unique, auto-generated via `@default(cuid())`) to Group model; added `GroupJoinRequest` model with PENDING/APPROVED/REJECTED status
+- **API routes** (7 new/modified): `POST /api/groups` (all roles, auto-adds creator as member), `POST /api/groups/join`, `POST /api/groups/available`, `POST /api/groups/[id]/leave`, `POST /api/groups/[id]/request-join`, `GET /api/groups/[id]/requests`, `PATCH /api/groups/requests/[id]`
+- **Student page** (`student/groups/page.tsx`): Full interactive client component with "My Groups" (with leave), "Available" (with request-join), create group dialog, join-by-code dialog
+- **Teacher page** (`GroupsPageContent.tsx`): Invite code display + per-group "Requests" tab with approve/reject buttons
 
-- Three.js is in `package.json` but completely unused
-- Likely intended for landing page — consider a 3D globe showing universities, or a 3D network visualization of projects
-- Subtle 3D background on landing hero, or 3D data viz on analytics page
+### 4. GitHub Auto-Sync ✅
 
-### Recharts Integration
+- **Created** `src/lib/github.ts` — GitHub REST API client: `fetchRepoInfo`, `fetchRecentCommits`, `fetchContributorCount`, `syncFromGitHub` (calculates commit counts for 24h/7d windows)
+- **Created** `src/repositories/github.repository.ts` — CRUD for `GitHubRepository` model
+- **Created** `src/services/github.service.ts` — `linkRepository` (validates via API), `unlinkRepository`, `syncRepository`, `syncProjectRepositories`, `syncAllRepositories`
+- **API routes**: `GET /api/github/repos`, `POST /api/github/repos`, `DELETE /api/github/repos/[id]`, `POST /api/github/sync`
+- **Created** `GitHubRepoManager` component — interactive card with link/unlink/sync per-repo, "Link Repo" dialog, "Sync All" button, inline commit stats
+- **Integrated** into both student and teacher project detail pages (replacing static repo link lists)
 
-- Recharts is installed but **no charts exist anywhere**
-- Add to admin/teacher analytics pages:
-  - Project status distribution (PieChart)
-  - Milestone completion over time (LineChart)
-  - Submission grading distribution (BarChart)
-  - Class enrollment trends (AreaChart)
+### Remaining (Postponed)
 
-### GitHub Sync (Automated)
-
-- Currently GitHub data is only seeded, never synced from real repos
-- Build a background sync that:
-  - Fetches commits via GitHub API for linked repos
-  - Updates `commitCount24h`, `commitCount7d`, `lastCommitSha`
-  - Could run via cron job, GitHub webhook receiver, or a queue worker
-
-### Student Group Self-Service
-
-- Students can view groups but cannot create or join them
-- Add: "Create Group" button, "Join Group" with invite codes, "Leave Group" flow
-- Group join requests with teacher approval
+- **Three.js / 3D Elements** — Three.js in `package.json` but unused; deferred to Phase 5
+- **Recharts Integration** — charts already built in Phase 2 components; further polish deferred
 
 ---
 
@@ -163,15 +156,15 @@ Add a testing stack:
 ## Suggested Implementation Order
 
 ```
-Week 1-2:  Fix password reset + UploadThing wiring + notification badge
-Week 3-4:  Build validators/ + repositories/ + services/ layers (refactor API routes)
-Week 5-6:  Build analytics/ + milestones/ + github/ feature components
-Week 7:    Pagination on all list endpoints + search/filter
-Week 8:    Real-time notifications (SSE) + notification center page
-Week 9:    Student group self-service + admin user CRUD
-Week 10:   Testing setup + CI/CD pipeline
-Week 11:   Docker + Recharts charts + Three.js elements
-Week 12:   Monitoring + accessibility + polish
+Week 1-2:  Fix password reset + UploadThing wiring + notification badge ✅
+Week 3-4:  Build validators/ + repositories/ + services/ layers (refactor API routes) ✅
+Week 5-6:  Build analytics/ + milestones/ + github/ feature components ✅
+Week 7:    Pagination on all list endpoints + search/filter ✅
+Week 8:    Real-time notifications (SSE) + notification center page ✅
+Week 9:    Student group self-service + admin user CRUD ✅
+Week 10:   GitHub auto-sync + API polish ✅
+Week 11:   Testing setup + CI/CD pipeline
+Week 12:   Docker + monitoring + accessibility + polish
 ```
 
 ### Highest Value Per Effort
@@ -190,20 +183,24 @@ Week 12:   Monitoring + accessibility + polish
 - Landing page (12 sections with GSAP/Lenis/Framer Motion animations)
 - Database schema (14 models with full relations and indexes)
 - Seed script (admin, 2 teachers, 20 students, 3 classes, 5 projects, milestones, comments)
-- Core API routes (auth, classes, projects, groups, milestones, submissions, comments, admin — 18 route files)
+- Core API routes (auth, classes, projects, groups, milestones, submissions, comments, admin, github — 22 route files)
 - Password reset flow (Nodemailer, forgot-password/reset-password API + page)
 - File upload (UploadThing v7, file attachment API, upload UI in student project detail)
-- Notification system (API routes, interactive notifications page, live unread badge)
+- Notification system (API routes, interactive notifications page, live unread badge, SSE real-time delivery)
 - Admin user CRUD (search, create, edit, suspend/unsuspend, delete)
 - Role-based dashboards (admin dashboard with stats, teacher dashboard with overview, student dashboard with projects)
 - Project detail pages (student: milestones + submit + comments + file upload; teacher: milestones + grade + activity + GitHub)
 - Sidebar (collapsible, role-filtered) and Navbar
 - shadcn/ui component library (20+ primitives)
 - Animation utilities (GSAP provider, Lenis provider, Framer Motion presets)
-- **Architectural layers**: `src/validators/` (10 files), `src/repositories/` (11 files), `src/services/` (10 files), `src/actions/` (3 files)
+- **Architectural layers**: `src/validators/` (11 files), `src/repositories/` (12 files), `src/services/` (11 files), `src/actions/` (3 files)
 - **Analytics charts**: `ProjectStatusChart` (PieChart), `MilestoneCompletionChart` (LineChart), `GradingDistributionChart` (BarChart), `EnrollmentChart` (AreaChart) — wired into admin & teacher analytics pages
+- **Cursor-based pagination** on all 6 list endpoints (projects, notifications, users, classes, groups, comments)
+- **Real-time notifications** via SSE (multi-tab, instant badge + notification list updates)
+- **Student group self-service**: create groups, join via invite code, leave, request-join with teacher approval flow
+- **GitHub auto-sync**: link/unlink repos, live commit fetch via GitHub API, per-repo and bulk sync — integrated into project detail pages
 - **Milestone components**: `MilestoneList`, `MilestoneCreateForm` — extracted from `teacher-project-detail.tsx`
-- **GitHub components**: `CommitActivityFeed`, `ContributorStats`, `RepoStatusBadge`
+- **GitHub components**: `CommitActivityFeed`, `ContributorStats`, `RepoStatusBadge`, `GitHubRepoManager`
 
 ### What's Still Scaffolded But Empty
 - `public/` — Static assets directory
@@ -211,14 +208,14 @@ Week 12:   Monitoring + accessibility + polish
 ### What's Broken or Missing Entirely
 - ~~Password reset flow~~ ✅
 - ~~File upload UI~~ ✅
-- ~~Real-time notification delivery~~ (notification center page ✅, real-time delivery pending)
+- ~~Real-time notification delivery~~ ✅
 - ~~Admin user CRUD~~ ✅
 - ~~Architectural layers (validators/repositories/services/actions)~~ ✅
 - ~~Charts (Recharts)~~ ✅
 - ~~Analytics / Milestones / GitHub feature components~~ ✅
-- Student group self-service (create/join/leave)
+- ~~Student group self-service~~ ✅
+- ~~GitHub auto-sync~~ ✅
 - Tests (zero)
 - CI/CD (zero)
 - Dockerfile
-- GitHub auto-sync
 - Three.js components (unused)

@@ -52,6 +52,9 @@ export default function AdminUsersPage() {
   const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | undefined>()
+  const [total, setTotal] = useState(0)
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<string | null>("")
   const [addOpen, setAddOpen] = useState(false)
@@ -60,24 +63,37 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetchUsers()
+    fetchUsers(true)
   }, [search, roleFilter])
 
   const roleFilterValue = roleFilter || ""
 
-  async function fetchUsers() {
-    setLoading(true)
+  async function fetchUsers(reset = false) {
+    if (reset) setLoading(true)
+    else setLoadingMore(true)
     try {
       const params = new URLSearchParams()
       if (search) params.set("search", search)
       if (roleFilterValue) params.set("role", roleFilterValue)
+      if (!reset && nextCursor) params.set("cursor", nextCursor)
+      params.set("limit", "50")
       const res = await fetch(`/api/admin/users?${params}`)
-      if (res.ok) setUsers(await res.json())
-      else toast.error("Failed to load users")
+      if (res.ok) {
+        const data = await res.json()
+        if (reset) {
+          setUsers(data.items)
+          setNextCursor(data.nextCursor)
+          setTotal(data.total)
+        } else {
+          setUsers((prev) => [...prev, ...data.items])
+          setNextCursor(data.nextCursor)
+        }
+      } else toast.error("Failed to load users")
     } catch {
       toast.error("Something went wrong")
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
@@ -312,6 +328,14 @@ export default function AdminUsersPage() {
               {users.length === 0 && (
                 <div className="py-12 text-center text-muted-foreground">No users found</div>
               )}
+            </div>
+          )}
+          {nextCursor && !loading && (
+            <div className="flex justify-center border-t p-4">
+              <Button variant="outline" size="sm" onClick={() => fetchUsers(false)} disabled={loadingMore}>
+                {loadingMore ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                {loadingMore ? "Loading..." : `Load more (${users.length}/${total})`}
+              </Button>
             </div>
           )}
         </CardContent>

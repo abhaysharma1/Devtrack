@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { groupSchema } from "@/validators/group"
+import { groupSchema, paginationSchema } from "@/validators"
 import { groupService } from "@/services/group.service"
 import { ZodError } from "zod"
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -26,10 +26,13 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const groups = await groupService.getGroups(session.user.role, session.user.id)
-  return NextResponse.json(groups)
+  const url = new URL(req.url)
+  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
+
+  const result = await groupService.getGroups(session.user.role, session.user.id, pagination)
+  return NextResponse.json(result)
 }

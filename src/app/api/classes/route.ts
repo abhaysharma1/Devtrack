@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { classSchema } from "@/validators/class"
+import { classSchema, paginationSchema } from "@/validators"
 import { classService } from "@/services/class.service"
 import { ZodError } from "zod"
 
@@ -26,12 +26,15 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const classes = await classService.getClasses(session.user.role, session.user.id)
-  return NextResponse.json(classes)
+  const url = new URL(req.url)
+  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
+
+  const result = await classService.getClasses(session.user.role, session.user.id, pagination)
+  return NextResponse.json(result)
 }

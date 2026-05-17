@@ -30,7 +30,7 @@ export const milestoneService = {
     }
 
     const isTeacher = userRole === "TEACHER" || userRole === "ADMIN"
-    const isOwner = milestone.project.ownerId === userId
+    const isOwner = (milestone as any).project.ownerId === userId
 
     if (!isTeacher && !isOwner) {
       throw new Error("Forbidden")

@@ -18,6 +18,7 @@ export default async function TeacherProjectsPage() {
       _count: { select: { milestones: true, comments: true } },
     },
     orderBy: { updatedAt: "desc" },
+    take: 100,
   })
 
   return <ProjectsPageContent projects={projects} />

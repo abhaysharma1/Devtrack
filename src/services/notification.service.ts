@@ -1,8 +1,13 @@
 import { notificationRepository } from "@/repositories/notification.repository"
+import { paginateResponse } from "@/repositories/base.repository"
+import type { PaginationInput } from "@/validators/common"
 
 export const notificationService = {
-  async listNotifications(userId: string) {
-    return notificationRepository.findManyByUser(userId)
+  async listNotifications(userId: string, pagination?: PaginationInput) {
+    const items = await notificationRepository.findManyByUser(userId, pagination)
+    if (!pagination) return items
+    const total = await notificationRepository.count({ recipientId: userId })
+    return paginateResponse(items, total, pagination)
   },
 
   async getUnreadCount(userId: string) {

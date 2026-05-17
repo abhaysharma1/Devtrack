@@ -19,8 +19,7 @@ import {
 import { getInitials, getStatusColor, formatDate, formatDateRelative } from "@/lib/utils"
 import { toast } from "sonner"
 import { MilestoneList } from "@/components/features/milestones/milestone-list"
-import { CommitActivityFeed } from "@/components/features/github/commit-activity-feed"
-import { ContributorStats } from "@/components/features/github/contributor-stats"
+import { GitHubRepoManager } from "@/components/features/github/github-repo-manager"
 import type { Milestone, MilestoneSubmission, Comment, GitHubRepository, ActivityLog, Group, GroupMember } from "@prisma/client"
 
 interface ProjectDetail {
@@ -230,18 +229,7 @@ export function TeacherProjectDetail({ project, userId }: { project: ProjectDeta
             </CardContent>
           </Card>
 
-          {project.repositories.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>GitHub Repositories</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ContributorStats repos={project.repositories} />
-                <Separator />
-                <CommitActivityFeed repos={project.repositories} />
-              </CardContent>
-            </Card>
-          )}
+          <GitHubRepoManager projectId={project.id} repositories={project.repositories} />
         </div>
       </div>
     </div>

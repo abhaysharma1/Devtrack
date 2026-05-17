@@ -1,32 +1,47 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Plus, Search, Users, Loader2, X, Trash2 } from "lucide-react"
+import { Plus, Search, Users, Loader2, X, Check, UserPlus } from "lucide-react"
 import { getInitials, getStatusColor } from "@/lib/utils"
 import { toast } from "sonner"
+
+interface GroupMember {
+  user: { id: string; name: string; image: string | null; email: string }
+}
 
 interface GroupWithDetails {
   id: string
   name: string
   maxSize: number
+  inviteCode: string
   isActive: boolean
   class: { name: string; code: string }
-  members: { user: { id: string; name: string; image: string | null; email: string } }[]
+  members: GroupMember[]
   project: { id: string; title: string; status: string } | null
 }
 
+interface JoinRequest {
+  id: string
+  groupId: string
+  userId: string
+  status: string
+  createdAt: string
+  user: { id: string; name: string; image: string | null; email: string }
+}
+
 export function GroupsPageContent({
-  groups,
+  groups: initialGroups,
   classes,
   teacherId,
 }: {
@@ -38,18 +53,33 @@ export function GroupsPageContent({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState("")
+  const [groups, setGroups] = useState(initialGroups)
+  const [joinRequests, setJoinRequests] = useState<Record<string, JoinRequest[]>>({})
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null)
+
+  useEffect(() => {
+    setGroups(initialGroups)
+  }, [initialGroups])
 
   const filtered = groups.filter((g) =>
     g.name.toLowerCase().includes(search.toLowerCase()) ||
     g.class.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  async function loadJoinRequests(groupId: string) {
+    try {
+      const res = await fetch(`/api/groups/${groupId}/requests`)
+      if (res.ok) {
+        const data = await res.json()
+        setJoinRequests((prev) => ({ ...prev, [groupId]: data }))
+      }
+    } catch { /* ignore */ }
+  }
+
   async function handleCreateGroup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
-
     const form = new FormData(e.currentTarget)
-
     try {
       const res = await fetch("/api/groups", {
         method: "POST",
@@ -60,13 +90,7 @@ export function GroupsPageContent({
           maxSize: parseInt(form.get("maxSize") as string),
         }),
       })
-
-      if (!res.ok) {
-        const err = await res.json()
-        toast.error(err.error || "Failed to create group")
-        return
-      }
-
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || "Failed to create group"); return }
       toast.success("Group created")
       setOpen(false)
       router.refresh()
@@ -74,6 +98,42 @@ export function GroupsPageContent({
       toast.error("Something went wrong")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleApprove(requestId: string) {
+    setProcessingRequest(requestId)
+    try {
+      const res = await fetch(`/api/groups/requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "APPROVED" }),
+      })
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || "Failed to approve"); return }
+      toast.success("Request approved")
+      router.refresh()
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setProcessingRequest(null)
+    }
+  }
+
+  async function handleReject(requestId: string) {
+    setProcessingRequest(requestId)
+    try {
+      const res = await fetch(`/api/groups/requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "REJECTED" }),
+      })
+      if (!res.ok) { const err = await res.json(); toast.error(err.error || "Failed to reject"); return }
+      toast.success("Request rejected")
+      router.refresh()
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setProcessingRequest(null)
     }
   }
 
@@ -167,6 +227,9 @@ export function GroupsPageContent({
               <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
                 <Users className="h-3 w-3" /> {group.members.length}/{group.maxSize} members
               </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Code: <span className="font-mono text-primary">{group.inviteCode}</span>
+              </p>
               <ScrollArea className="h-[100px]">
                 <div className="space-y-2">
                   {group.members.map((m) => (
@@ -180,6 +243,59 @@ export function GroupsPageContent({
                   ))}
                 </div>
               </ScrollArea>
+
+              <div className="mt-3">
+                <Tabs defaultValue="members" onValueChange={(v) => { if (v === "requests") loadJoinRequests(group.id) }}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="members" className="flex-1 text-xs">Members</TabsTrigger>
+                    <TabsTrigger value="requests" className="flex-1 text-xs">
+                      Requests
+                      {joinRequests[group.id]?.filter((r) => r.status === "PENDING").length ? (
+                        <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">
+                          {joinRequests[group.id].filter((r) => r.status === "PENDING").length}
+                        </Badge>
+                      ) : null}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="requests" className="mt-2">
+                    {!joinRequests[group.id] ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : joinRequests[group.id].length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">No requests</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {joinRequests[group.id].map((req) => (
+                          <div key={req.id} className="flex items-center justify-between gap-2 bg-muted/30 rounded p-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={req.user.image || ""} />
+                                <AvatarFallback className="text-[8px]">{getInitials(req.user.name)}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs truncate">{req.user.name}</span>
+                            </div>
+                            {req.status === "PENDING" ? (
+                              <div className="flex gap-1 flex-shrink-0">
+                                <Button size="icon" variant="ghost" className="h-6 w-6 text-green-500" onClick={() => handleApprove(req.id)} disabled={processingRequest === req.id}>
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => handleReject(req.id)} disabled={processingRequest === req.id}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge variant={req.status === "APPROVED" ? "default" : "secondary"} className="text-[10px]">
+                                {req.status}
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
             </CardContent>
           </Card>
         ))}

@@ -1,12 +1,16 @@
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@prisma/client"
+import { buildPaginationArgs } from "./base.repository"
+import type { PaginationInput } from "@/validators/common"
 
 export const notificationRepository = {
-  async findManyByUser(userId: string, take = 50) {
+  async findManyByUser(userId: string, pagination?: PaginationInput) {
     return prisma.notification.findMany({
       where: { recipientId: userId },
       orderBy: { createdAt: "desc" },
-      take,
+      take: pagination?.limit ?? 50,
+      skip: pagination?.cursor ? 1 : undefined,
+      cursor: pagination?.cursor ? { id: pagination.cursor } : undefined,
     })
   },
 
@@ -14,16 +18,16 @@ export const notificationRepository = {
     return prisma.notification.findUnique({ where: { id } })
   },
 
-  async create(data: Prisma.NotificationCreateInput) {
-    return prisma.notification.create({ data })
+  async create(data: Record<string, unknown>) {
+    return prisma.notification.create({ data: data as Prisma.NotificationCreateInput })
   },
 
-  async update(id: string, data: Prisma.NotificationUpdateInput) {
-    return prisma.notification.update({ where: { id }, data })
+  async update(id: string, data: Record<string, unknown>) {
+    return prisma.notification.update({ where: { id }, data: data as Prisma.NotificationUpdateInput })
   },
 
-  async updateMany(where: Prisma.NotificationWhereInput, data: Prisma.NotificationUpdateManyMutationInput) {
-    return prisma.notification.updateMany({ where, data })
+  async updateMany(where: Prisma.NotificationWhereInput, data: Record<string, unknown>) {
+    return prisma.notification.updateMany({ where, data: data as Prisma.NotificationUpdateManyMutationInput })
   },
 
   async delete(id: string) {

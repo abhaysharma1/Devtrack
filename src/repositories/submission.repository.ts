@@ -12,11 +12,11 @@ export const submissionRepository = {
     })
   },
 
-  async create(data: Prisma.MilestoneSubmissionCreateInput) {
-    return prisma.milestoneSubmission.create({ data })
+  async create(data: Record<string, unknown>) {
+    return prisma.milestoneSubmission.create({ data: data as Prisma.MilestoneSubmissionCreateInput })
   },
 
-  async update(id: string, data: Prisma.MilestoneSubmissionUpdateInput) {
-    return prisma.milestoneSubmission.update({ where: { id }, data })
+  async update(id: string, data: Record<string, unknown>) {
+    return prisma.milestoneSubmission.update({ where: { id }, data: data as Prisma.MilestoneSubmissionUpdateInput })
   },
 }

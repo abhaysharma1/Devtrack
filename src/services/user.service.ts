@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs"
 import { userRepository } from "@/repositories/user.repository"
+import { paginateResponse } from "@/repositories/base.repository"
 import type { CreateUserInput, UpdateUserInput } from "@/validators"
+import type { PaginationInput } from "@/validators/common"
 
 export const userService = {
   async createUser(input: CreateUserInput) {
@@ -51,7 +53,10 @@ export const userService = {
     return { success: true }
   },
 
-  listUsers(params: { search?: string; role?: string }) {
-    return userRepository.findMany(params)
+  async listUsers(params: { search?: string; role?: string }, pagination?: PaginationInput) {
+    const items = await userRepository.findMany(params, pagination)
+    if (!pagination) return items
+    const total = await userRepository.count(params)
+    return paginateResponse(items, total, pagination)
   },
 }
