@@ -52,52 +52,119 @@
 
 ---
 
-## Phase 2: High-Impact Functional Bugs
+## Phase 2: High-Impact Functional Bugs ✅ COMPLETED
 
-### 6. Classes search input is completely non-functional
-- **File:** `src/components/features/classes/classes-page-content.tsx:157`
-- **Problem:** The `<Input>` has `placeholder="Search classes..."` but no `value` binding, no `onChange` handler, and no backing `useState`. It's a decorative element — users can type but nothing happens.
-- **Fix:** Add `const [search, setSearch] = useState("")`, bind `value` and `onChange` to the input, and implement client-side filtering.
+### Execution Order (batched by dependency)
 
-### 7. `fetchUsers()` called without `reset=true` after CRUD mutations
-- **File:** `src/app/(dashboard)/admin/users/page.tsx:120,152,166,181`
-- **Problem:** `handleAdd`, `handleEdit`, `handleDelete`, and `toggleSuspend` all call `fetchUsers()` with the default `reset=false`. This means they **append** data using the existing `nextCursor` instead of refreshing from scratch. After a delete, the deleted user remains visible.
-- **Fix:** Change all four calls to `fetchUsers(true)`.
+```
+Batch A (Infra + Quick wins) ──► Batch B (UI/UX fixes) ──► Batch C (Service-layer)
+```
 
-### 8. `addComment` permanently disables the comment form on API error
-- **File:** `src/components/features/projects/teacher-project-detail.tsx:68`
-- **Problem:** When `!res.ok`, the function returns early with `setSubmitting(null)` never called. The submit button and textarea remain permanently disabled (`submitting === "comment"`).
-- **Fix:** Add `setSubmitting(null);` before the `return` on line 68.
+**Verification gates after each batch:**
+- `npm run typecheck` — zero errors
+- `npm test` — all 156+ tests passing (update mocks as needed)
+- Manual smoke test of affected features
 
-### 9. Notification link uses sender's role, not recipient's
-- **File:** `src/services/comment.service.ts:26`
-- **Problem:** `const link = \`/${userRole === "TEACHER" || userRole === "ADMIN" ? "teacher" : "student"}/projects/${project.id}\`` — this constructs the link based on the **commenter's** role. If a TEACHER comments on a student's project, the notification sent to the student has a `/teacher/...` link, which breaks navigation for the student.
-- **Fix:** Look up the recipient's role and use it for the link. Or use a role-agnostic path with server-side redirect.
+---
 
-### 10. Four `group.service.ts` notification calls missing `link` field
-- **File:** `src/services/group.service.ts:58,84,100,115`
-- **Problem:** `notificationRepository.create()` calls in `joinGroupByCode`, `requestJoinGroup`, `approveJoinRequest`, and `rejectJoinRequest` do not include a `link` property. Users clicking these notifications go nowhere.
-- **Fix:** Add appropriate `link` to each notification (e.g., `/student/groups`, `/teacher/groups`, `/student/projects/{id}` depending on context).
+### Batch A — Infrastructure & Quick Wins
 
-### 11. `class.service.ts` returns zero classes for STUDENT role
-- **File:** `src/services/class.service.ts:21`
-- **Problem:** `const where = role === "ADMIN" ? undefined : { teacherId: userId }` — for non-ADMIN roles (including STUDENT), it filters by `teacherId: userId`. Students are never teachers, so they see zero classes.
-- **Fix:** Add STUDENT handling: `const where = role === "ADMIN" ? undefined : role === "STUDENT" ? { members: { some: { userId } } } : { teacherId: userId }`.
-
-### 12. Sidebar: Dashboard link highlighted on ALL sub-pages
-- **File:** `src/components/layouts/sidebar.tsx:228`
-- **Problem:** `const isActive = pathname === item.href || pathname.startsWith(item.href + "/")` — for dashboard links (`/admin`, `/teacher`, `/student`), the `startsWith` check makes them active on every sub-page. The Dashboard nav item is always highlighted.
-- **Fix:** For dashboard-level items, use exact matching (same-depth check). E.g., check that `pathname.split("/").length === item.href.split("/").length` for the `startsWith` match.
-
-### 13. ESLint configuration broken
-- **File:** `package.json` script + missing/minformed ESLint config
-- **Problem:** `npm run lint` fails with: `Invalid project directory provided, no such directory: D:\Projects\opencode test\spms\lint`. This suggests ESLint is trying to find a `lint/` directory instead of linting the project root.
-- **Fix:** Check `eslint.config.js` (or `.eslintrc.*`) for misconfiguration. The `next lint` command should be run from the project root. Verify the eslint config extends `next/core-web-vitals` correctly.
-
-### 14. TypeScript 6 `baseUrl` deprecation
+#### 14. TypeScript 6 `baseUrl` deprecation ✅
 - **File:** `tsconfig.json:30`
-- **Problem:** `"baseUrl": "."` is deprecated in TypeScript 6 and will be removed in TypeScript 7. The `paths` mapping already exists (`"@/*": ["./src/*"]`) which handles the typical use case.
-- **Fix:** Add `"ignoreDeprecations": "6.0"` to silence the error, or refactor to remove `baseUrl` and adjust `paths` if needed.
+- **Fix:** Remove `"baseUrl": "."` — the `paths` mapping (`"@/*": ["./src/*"]`) already resolves correctly relative to the tsconfig location.
+- **Risk:** None. The `paths` entry works without `baseUrl`.
+- **Verification:** `npm run typecheck` — the TS5101 error disappears.
+
+#### 13. ESLint configuration broken ✅
+- **File:** (new) `eslint.config.mjs`
+- **Fix:** Create ESLint flat config file using the `@eslint/eslintrc` `FlatCompat` adapter to extend `"next"`. Standard approach for ESLint v9 + Next.js.
+- **Risk:** Must match ESLint 9 flat config format. `eslint-config-next` already present.
+- **Verification:** `npm run lint` passes with no errors.
+
+#### 7. `fetchUsers()` called without `reset=true` after CRUD mutations ✅
+- **Files:** `src/app/(dashboard)/admin/users/page.tsx:120,152,166,181`
+- **Fix:** Change all four `fetchUsers()` calls to `fetchUsers(true)`.
+- **Risk:** None. Simple argument change.
+- **Verification:** After delete/edit/suspend, the user list refreshes from scratch (deleted users disappear; changes appear immediately).
+
+#### 8. `addComment` permanently disables the comment form on API error ✅
+- **File:** `src/components/features/projects/teacher-project-detail.tsx:68`
+- **Fix:** Add `setSubmitting(null)` before the `return` on the `!res.ok` error path.
+- **Risk:** None. Single-line addition.
+- **Verification:** Trigger a failed comment submission → form re-enables instead of staying stuck.
+
+---
+
+### Batch B — UI/UX Fixes
+
+#### 6. Classes search input is completely non-functional ✅
+- **File:** `src/components/features/classes/classes-page-content.tsx:37,154-158,173`
+- **Fix:**
+  1. Add `const [search, setSearch] = useState("")` at line 38 (alongside existing state)
+  2. Bind `value={search}` and `onChange={(e) => setSearch(e.target.value)}` to the `<Input>`
+  3. Replace `classes.map(...)` with `classes.filter(c => c.name.toLowerCase().includes(search.toLowerCase())).map(...)`
+- **Risk:** Client-side filtering only (no server round-trip). Adequate for reasonably sized class lists.
+- **Verification:** Typing in the search field filters the displayed classes in real time.
+
+#### 12. Sidebar: Dashboard link highlighted on ALL sub-pages ✅
+- **File:** `src/components/layouts/sidebar.tsx:228`
+- **Fix:** Add a special case for dashboard-level hrefs (those matching role base paths like `/teacher`, `/student`, `/admin`):
+  ```tsx
+  const isActive =
+    ["/teacher", "/student", "/admin"].includes(item.href)
+      ? pathname === item.href
+      : pathname === item.href || pathname.startsWith(item.href + "/")
+  ```
+- **Risk:** Low. Only affects the visual active state in the sidebar.
+- **Verification:** Dashboard link is only highlighted when exactly on `/teacher`, `/student`, or `/admin` — not on sub-pages like `/teacher/classes`.
+
+---
+
+### Batch C — Service-Layer Fixes
+
+#### 10. Four `group.service.ts` notification calls missing `link` field ✅
+- **File:** `src/services/group.service.ts:63,100,129,154`
+- **Fix:** Add appropriate `link` to each notification:
+  - `joinGroupByCode` → `` link: `/teacher/groups/${group.id}` `` (notifies the group creator/teacher)
+  - `requestJoinGroup` → `` link: `/teacher/groups/${group.id}` `` (notifies the group creator/teacher)
+  - `approveJoinRequest` → `` link: `/student/groups/${group.id}` `` (notifies the requesting student)
+  - `rejectJoinRequest` → `` link: `/student/groups` `` (notifies the requesting student, generic groups page)
+- **Risk:** Low. Adding a field to notification data does not affect existing consumers.
+- **Verification:** Clicking each notification type navigates to the expected page.
+
+#### 11. `class.service.ts` returns zero classes for STUDENT role ✅
+- **File:** `src/services/class.service.ts:21`
+- **Fix:** Change the `where` clause to handle STUDENT role:
+  ```tsx
+  const where =
+    role === "ADMIN" ? undefined
+    : role === "STUDENT" ? { members: { some: { userId } } }
+    : { teacherId: userId }
+  ```
+- **Risk:** Medium. Changes query behavior for STUDENT path. Verify repository supports `members` relation filter and update tests.
+- **Verification:** A student user sees classes they are a member of.
+
+#### 9. Notification link uses sender's role, not recipient's ✅
+- **File:** `src/services/comment.service.ts:28`
+- **Fix:** Inside the transaction, fetch the project owner's role: `const owner = await tx.user.findUnique(...)` and use `owner.role` instead of `userRole` for the link.
+- **Risk:** Medium. Adds a DB query inside the transaction. Consistent but adds latency.
+- **Verification:** TEACHER comments on STUDENT's project → STUDENT's notification links to `/student/projects/{id}`.
+
+---
+
+### Post-Phase-2 Verification
+
+1. `npm run typecheck` — zero errors
+2. `npm run lint` — passes (after Bug 13 fix)
+3. `npm test` — all 156+ tests pass
+4. Manual E2E walkthrough:
+   - Teacher logs in → Dashboard not highlighted on sub-pages
+   - Teacher searches classes → filter works
+   - Teacher adds comment → error doesn't lock form
+   - Teacher grades/edits → notification links work for student recipients
+   - Admin user CRUD → list refreshes after create/edit/delete/suspend
+   - Student views classes → sees enrolled classes
+   - Student clicks group notifications → navigates correctly
 
 ---
 

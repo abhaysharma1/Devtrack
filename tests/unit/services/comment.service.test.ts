@@ -4,6 +4,7 @@ const mockTxClient = vi.hoisted(() => ({
   comment: { create: vi.fn() },
   notification: { create: vi.fn() },
   activityLog: { create: vi.fn() },
+  user: { findUnique: vi.fn() },
 }))
 
 const mockPrisma = vi.hoisted(() => ({
@@ -41,6 +42,7 @@ describe("commentService", () => {
       mockProjectRepo.findById.mockResolvedValue({ id: "p1", title: "My Project", ownerId: "u2" })
       mockTxClient.comment.create.mockResolvedValue({ id: "c1", content: "Nice work!" })
       mockTxClient.notification.create.mockResolvedValue({})
+      mockTxClient.user.findUnique.mockResolvedValue({ role: "STUDENT" })
 
       const result = await commentService.addComment(
         { content: "Nice work!", projectId: "p1" },

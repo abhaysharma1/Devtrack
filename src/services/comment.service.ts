@@ -25,7 +25,8 @@ export const commentService = {
       })
 
       if (project.ownerId !== userId) {
-        const link = `/${userRole === "TEACHER" || userRole === "ADMIN" ? "teacher" : "student"}/projects/${project.id}`
+        const owner = await tx.user.findUnique({ where: { id: project.ownerId }, select: { role: true } })
+        const link = `/${owner?.role === "TEACHER" || owner?.role === "ADMIN" ? "teacher" : "student"}/projects/${project.id}`
         const notification = await tx.notification.create({
           data: {
             type: "COMMENT_ADDED",

@@ -36,6 +36,7 @@ export function ClassesPageContent({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState("")
 
   async function handleCreateClass(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -154,7 +155,7 @@ export function ClassesPageContent({
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search classes..." className="pl-10 max-w-sm" />
+        <Input placeholder="Search classes..." className="pl-10 max-w-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {/* Classes Grid */}
@@ -170,7 +171,7 @@ export function ClassesPageContent({
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {classes.map((cls) => (
+          {classes.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())).map((cls) => (
             <Card key={cls.id} className="transition-colors hover:bg-accent/50">
               <CardHeader>
                 <div className="flex items-start justify-between">

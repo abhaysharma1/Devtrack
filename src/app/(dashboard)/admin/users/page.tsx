@@ -117,7 +117,7 @@ export default function AdminUsersPage() {
       if (!res.ok) { const d = await res.json(); toast.error(d.error || "Failed to create"); return }
       toast.success("User created")
       setAddOpen(false)
-      fetchUsers()
+      fetchUsers(true)
     } catch {
       toast.error("Something went wrong")
     } finally {
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
       toast.success("User updated")
       setEditOpen(false)
       setEditingUser(null)
-      fetchUsers()
+      fetchUsers(true)
     } catch {
       toast.error("Something went wrong")
     } finally {
@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE" })
       if (!res.ok) { const d = await res.json(); toast.error(d.error || "Failed to delete"); return }
       toast.success("User deleted")
-      fetchUsers()
+      fetchUsers(true)
     } catch {
       toast.error("Something went wrong")
     }
@@ -178,7 +178,7 @@ export default function AdminUsersPage() {
       })
       if (!res.ok) return
       toast.success(user.isSuspended ? "User unsuspended" : "User suspended")
-      fetchUsers()
+      fetchUsers(true)
     } catch {
       toast.error("Something went wrong")
     }

@@ -225,7 +225,7 @@ function SidebarContent({
       <ScrollArea className="flex-1 py-2">
         <nav className={cn("grid gap-1 px-2", collapsed && "px-1")}>
           {items.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+            const isActive = ["/teacher", "/student", "/admin"].includes(item.href) ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/")
             return collapsed ? (
               <Tooltip key={item.href}>
                 <TooltipTrigger className={cn(

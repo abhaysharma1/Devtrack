@@ -67,6 +67,7 @@ export const groupService = {
           message: `A student joined "${group.name}"`,
           recipientId: group.creatorId,
           senderId: userId,
+          link: `/teacher/groups/${group.id}`,
         },
       })
 
@@ -104,6 +105,7 @@ export const groupService = {
           message: `A student wants to join "${group.name}"`,
           recipientId: group.creatorId,
           senderId: userId,
+          link: `/teacher/groups/${group.id}`,
         },
       })
 
@@ -133,6 +135,7 @@ export const groupService = {
           message: "Your request to join the group was approved",
           recipientId: request.userId,
           senderId: userId,
+          link: `/student/groups/${request.groupId}`,
         },
       })
 
@@ -158,6 +161,7 @@ export const groupService = {
           message: "Your request to join the group was rejected",
           recipientId: request.userId,
           senderId: userId,
+          link: `/student/groups`,
         },
       })
 

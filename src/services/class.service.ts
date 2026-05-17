@@ -18,7 +18,7 @@ export const classService = {
   },
 
   async getClasses(role: string, userId: string, pagination?: PaginationInput) {
-    const where = role === "ADMIN" ? undefined : { teacherId: userId }
+    const where = role === "ADMIN" ? undefined : role === "STUDENT" ? { members: { some: { userId } } } : { teacherId: userId }
     const items = await classRepository.findMany(where, pagination)
     if (!pagination) return items
     const total = await classRepository.count(where)

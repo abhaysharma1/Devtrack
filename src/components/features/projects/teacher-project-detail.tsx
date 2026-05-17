@@ -65,7 +65,7 @@ export function TeacherProjectDetail({ project, userId }: { project: ProjectDeta
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: commentText, projectId: project.id }),
       })
-      if (!res.ok) { toast.error("Failed to add comment"); return }
+      if (!res.ok) { toast.error("Failed to add comment"); setSubmitting(null); return }
       setCommentText("")
       toast.success("Comment added")
       setSubmitting(null)
