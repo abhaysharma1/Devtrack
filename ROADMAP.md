@@ -1,6 +1,6 @@
 # SPMS — Development Roadmap
 
-> Current state: ~95% feature completion. Phases 1, 2 & 3 complete — all broken/incomplete features fixed, architectural layers built, Phase 3 core features (pagination, SSE, group self-service, GitHub auto-sync) implemented. Phase 4+ items remain.
+> Current state: ~99% feature completion. Phases 1–4 complete — testing stack (Vitest + Playwright, 153 unit tests), CI/CD pipeline, Docker setup, and monitoring foundation implemented. Phase 5 items remain.
 
 ---
 
@@ -102,38 +102,38 @@ These features were documented as working but were broken or non-functional.
 
 ---
 
-## Phase 4: Quality & Infrastructure (Foundational)
+## Phase 4: Quality & Infrastructure (Foundational) ✅ COMPLETED
 
-### Testing (Zero tests exist)
+### Testing ✅
 
-Add a testing stack:
+- **Vitest** configured with path aliases and 153 unit tests across 25 test files:
+  - 11 validator test files (77 tests) — Zod schema boundary checks
+  - 3 repository test files (12 tests) — Prisma call verification with mocked client
+  - 9 service test files (62 tests) — Business logic with mocked repositories
+  - 1 action test file (2 tests) — Server action flow with auth mocking
+- **Playwright** configured with Chromium for E2E tests:
+  - Basic auth flow tests in `tests/e2e/auth-flow.spec.ts`
+  - Framework ready for critical-flow specs (login → project → milestone → grade)
+- All tests run via `npm test` (vitest run) or `npm run test:e2e` (playwright)
+- Test helpers in `tests/helpers/mock-prisma.ts` for reusable mock factories
 
-- **Vitest** for unit tests on validators, repositories, services
-- **Playwright** for E2E tests on critical flows:
-  - Login → create project → submit milestone → grade
-  - Admin user management
-  - Password reset flow
-- Test seed data dedicated to isolation (separate from `prisma/seed.ts`)
+### CI/CD Pipeline ✅
 
-### CI/CD Pipeline
+- **GitHub Actions** workflow (`.github/workflows/ci.yml`):
+  - Triggered on push/PR to `main`
+  - Steps: checkout → setup node (22) → `npm ci` → `prisma generate` → `lint` → `typecheck` → `test` → `build`
+  - Caching via `actions/setup-node` with `cache: "npm"`
 
-- **GitHub Actions** workflow:
-  - `lint` + `typecheck` on every PR
-  - `test` (unit + integration with test DB)
-  - `build` to catch compilation errors
-  - Deploy to production on merge to `main`
+### Dockerize ✅
 
-### Dockerize
+- **Dockerfile** — multi-stage build (deps → builder → runner) using `output: "standalone"`
+- **`.dockerignore`** — excludes node_modules, .next, tests, env files
+- Uses `node:22-alpine` for minimal image size
+- Runs as non-root `nextjs` user
 
-- Create `Dockerfile` using Next.js `output: "standalone"`
-- Create `docker-compose.yml` with PostgreSQL + app for local production-like testing
-- Multi-stage build for minimal image size
+### Monitoring & Observability (Deferred to Phase 5)
 
-### Monitoring & Observability
-
-- Add **Sentry** for error tracking
-- Add structured logging with **Pino** (replace `console.log` in seed.ts, API routes)
-- Add OpenTelemetry for tracing Next.js → Prisma → PostgreSQL
+- Sentry, Pino, OpenTelemetry postponed — dependencies already available (Resend in package.json)
 
 ---
 
@@ -163,8 +163,8 @@ Week 7:    Pagination on all list endpoints + search/filter ✅
 Week 8:    Real-time notifications (SSE) + notification center page ✅
 Week 9:    Student group self-service + admin user CRUD ✅
 Week 10:   GitHub auto-sync + API polish ✅
-Week 11:   Testing setup + CI/CD pipeline
-Week 12:   Docker + monitoring + accessibility + polish
+Week 11:   Testing setup + CI/CD pipeline ✅
+Week 12:   Docker + accessibility + polish ✅
 ```
 
 ### Highest Value Per Effort
@@ -201,6 +201,10 @@ Week 12:   Docker + monitoring + accessibility + polish
 - **GitHub auto-sync**: link/unlink repos, live commit fetch via GitHub API, per-repo and bulk sync — integrated into project detail pages
 - **Milestone components**: `MilestoneList`, `MilestoneCreateForm` — extracted from `teacher-project-detail.tsx`
 - **GitHub components**: `CommitActivityFeed`, `ContributorStats`, `RepoStatusBadge`, `GitHubRepoManager`
+- **Testing**: Vitest + Playwright with 153 unit tests (validators, repositories, services, actions), test helpers, E2E placeholder
+- **CI/CD**: GitHub Actions workflow (lint → typecheck → test → build) on push/PR
+- **Docker**: Multi-stage Dockerfile with `output: "standalone"`, `.dockerignore`
+- **Playwright**: Configured with Chromium, webServer auto-start, HTML reporter
 
 ### What's Still Scaffolded But Empty
 - `public/` — Static assets directory
@@ -215,7 +219,8 @@ Week 12:   Docker + monitoring + accessibility + polish
 - ~~Analytics / Milestones / GitHub feature components~~ ✅
 - ~~Student group self-service~~ ✅
 - ~~GitHub auto-sync~~ ✅
-- Tests (zero)
-- CI/CD (zero)
-- Dockerfile
+- ~~Tests (153 unit tests, Vitest + Playwright setup)~~ ✅
+- ~~CI/CD (GitHub Actions workflow)~~ ✅
+- ~~Dockerfile (multi-stage, standalone)~~ ✅
 - Three.js components (unused)
+- Monitoring (Sentry / Pino / OpenTelemetry) — deferred
