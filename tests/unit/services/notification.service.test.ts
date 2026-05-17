@@ -1,3 +1,4 @@
+import type { PaginatedResult } from "@/validators/common"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 const mockNotifRepo = vi.hoisted(() => ({
@@ -30,7 +31,7 @@ describe("notificationService", () => {
       mockNotifRepo.findManyByUser.mockResolvedValue([{ id: "n1" }])
       mockNotifRepo.count.mockResolvedValue(1)
 
-      const result = await notificationService.listNotifications("u1", { limit: 10 })
+      const result = await notificationService.listNotifications("u1", { limit: 10 }) as PaginatedResult<unknown>
       expect(result.items).toHaveLength(1)
       expect(result.total).toBe(1)
     })

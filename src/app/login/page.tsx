@@ -40,14 +40,24 @@ function LoginForm() {
         return
       }
 
-      const res = await fetch("/api/auth/session")
-      const session = await res.json()
+      let session
+      for (let i = 0; i < 3; i++) {
+        if (i > 0) await new Promise((r) => setTimeout(r, 200))
+        const res = await fetch("/api/auth/session")
+        session = await res.json()
+        if (session?.user?.role) break
+      }
+
       const role = session?.user?.role
 
       setRedirecting(true)
       if (role === "ADMIN") router.push("/admin")
       else if (role === "TEACHER") router.push("/teacher")
-      else router.push("/student")
+      else if (role === "STUDENT") router.push("/student")
+      else {
+        toast.error("Unable to determine user role. Please try again.")
+        setRedirecting(false)
+      }
     } catch {
       toast.error("Something went wrong")
     } finally {

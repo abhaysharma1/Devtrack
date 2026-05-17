@@ -6,8 +6,11 @@ import { ZodError } from "zod"
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   try {

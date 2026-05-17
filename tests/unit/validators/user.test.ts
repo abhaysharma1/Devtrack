@@ -3,31 +3,35 @@ import { registerSchema, createUserSchema, updateUserSchema } from "@/validators
 
 describe("registerSchema", () => {
   it("accepts valid student registration", () => {
-    const data = { name: "Alice", email: "alice@test.com", password: "secret123", role: "STUDENT" }
+    const data = { name: "Alice", email: "alice@test.com", password: "secret123", confirmPassword: "secret123", role: "STUDENT" }
     expect(() => registerSchema.parse(data)).not.toThrow()
   })
 
   it("accepts registration with optional fields", () => {
-    const data = { name: "Bob", email: "bob@test.com", password: "secret123", role: "TEACHER", studentId: "S001", department: "CS" }
+    const data = { name: "Bob", email: "bob@test.com", password: "secret123", confirmPassword: "secret123", role: "TEACHER", studentId: "S001", department: "CS" }
     const result = registerSchema.parse(data)
     expect(result.studentId).toBe("S001")
     expect(result.department).toBe("CS")
   })
 
   it("rejects short name", () => {
-    expect(() => registerSchema.parse({ name: "A", email: "a@test.com", password: "secret123", role: "STUDENT" })).toThrow()
+    expect(() => registerSchema.parse({ name: "A", email: "a@test.com", password: "secret123", confirmPassword: "secret123", role: "STUDENT" })).toThrow()
   })
 
   it("rejects invalid email", () => {
-    expect(() => registerSchema.parse({ name: "Alice", email: "not-email", password: "secret123", role: "STUDENT" })).toThrow()
+    expect(() => registerSchema.parse({ name: "Alice", email: "not-email", password: "secret123", confirmPassword: "secret123", role: "STUDENT" })).toThrow()
   })
 
   it("rejects short password", () => {
-    expect(() => registerSchema.parse({ name: "Alice", email: "alice@test.com", password: "123", role: "STUDENT" })).toThrow()
+    expect(() => registerSchema.parse({ name: "Alice", email: "alice@test.com", password: "123", confirmPassword: "123", role: "STUDENT" })).toThrow()
   })
 
   it("rejects invalid role", () => {
-    expect(() => registerSchema.parse({ name: "Alice", email: "alice@test.com", password: "secret123", role: "ADMIN" })).toThrow()
+    expect(() => registerSchema.parse({ name: "Alice", email: "alice@test.com", password: "secret123", confirmPassword: "secret123", role: "ADMIN" })).toThrow()
+  })
+
+  it("rejects mismatched passwords", () => {
+    expect(() => registerSchema.parse({ name: "Alice", email: "alice@test.com", password: "secret123", confirmPassword: "different", role: "STUDENT" })).toThrow()
   })
 })
 

@@ -1,8 +1,6 @@
 import { vi } from "vitest"
 
-type MockPrismaClient = {
-  [K in keyof typeof import("@prisma/client").PrismaClient]?: unknown
-}
+type MockPrismaClient = Record<string, Record<string, ReturnType<typeof vi.fn>>>
 
 export function createMockPrisma() {
   const mockPrisma: MockPrismaClient = {

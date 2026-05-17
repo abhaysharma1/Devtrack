@@ -6,8 +6,11 @@ import { ZodError } from "zod"
 
 export async function POST(req: Request) {
   const session = await auth()
-  if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+  if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   try {
@@ -32,9 +35,19 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const url = new URL(req.url)
-  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
+  try {
+    const url = new URL(req.url)
+    const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
 
-  const result = await classService.getClasses(session.user.role, session.user.id, pagination)
-  return NextResponse.json(result)
+    const result = await classService.getClasses(session.user.role, session.user.id, pagination)
+    return NextResponse.json(result)
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+    }
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
 }

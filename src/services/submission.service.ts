@@ -58,6 +58,7 @@ export const submissionService = {
             message: `${userName} submitted "${milestone.title}" for ${project.title}`,
             recipientId: project.class.teacherId,
             senderId: userId,
+            link: `/teacher/projects/${milestone.projectId}`,
           },
         })
         pushEvent(project.class.teacherId, "notification", notification)
@@ -133,6 +134,7 @@ export const submissionService = {
           message: `Your milestone "${ms.title}" was ${activityDesc} with grade ${input.grade}`,
           recipientId: submission.userId,
           senderId: userId,
+          link: `/student/projects/${ms.projectId}`,
         },
       })
 

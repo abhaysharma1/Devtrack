@@ -28,14 +28,24 @@ export async function GET(req: Request) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const url = new URL(req.url)
-  const projectId = url.searchParams.get("projectId")
+  try {
+    const url = new URL(req.url)
+    const projectId = url.searchParams.get("projectId")
 
-  if (!projectId) {
-    return NextResponse.json({ error: "projectId query param required" }, { status: 400 })
+    if (!projectId) {
+      return NextResponse.json({ error: "projectId query param required" }, { status: 400 })
+    }
+
+    const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
+    const result = await commentService.getComments(projectId, pagination)
+    return NextResponse.json(result)
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
+    }
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-
-  const pagination = paginationSchema.parse(Object.fromEntries(url.searchParams))
-  const result = await commentService.getComments(projectId, pagination)
-  return NextResponse.json(result)
 }

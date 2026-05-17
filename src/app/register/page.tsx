@@ -30,6 +30,7 @@ export default function RegisterPage() {
       name: form.get("name") as string,
       email: form.get("email") as string,
       password: form.get("password") as string,
+      confirmPassword: form.get("confirmPassword") as string,
       role: role,
       studentId: form.get("studentId") as string,
       department: form.get("department") as string,
@@ -194,6 +195,19 @@ export default function RegisterPage() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                </motion.div>
+
+                <motion.div variants={item} className="space-y-2 mb-4">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="Repeat your password"
+                    required
+                    minLength={8}
+                    className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
+                  />
                 </motion.div>
 
                 <motion.div variants={item} className="grid grid-cols-2 gap-4 mb-4">

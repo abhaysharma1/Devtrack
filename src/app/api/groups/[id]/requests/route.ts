@@ -6,7 +6,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const session = await auth()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const { id } = await params
-  const requests = await groupService.getJoinRequests(id)
-  return NextResponse.json(requests)
+  try {
+    const { id } = await params
+    const requests = await groupService.getJoinRequests(id)
+    return NextResponse.json(requests)
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
 }

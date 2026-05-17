@@ -1,9 +1,9 @@
 # SPMS Bug & Glitch Fix Plan
 
 **Generated:** 2026-05-17  
-**Tests:** 153/153 passing (all clear)  
-**TypeScript:** 1 deprecation warning (baseUrl in TS 6)  
-**ESLint:** Fails to run (config issue)
+**Tests:** 159/159 passing (all clear)  
+**TypeScript:** 0 errors  
+**ESLint:** 9 pre-existing issues (none from Phase 3)
 
 ---
 
@@ -168,77 +168,158 @@ Batch A (Infra + Quick wins) ──► Batch B (UI/UX fixes) ──► Batch C (
 
 ---
 
-## Phase 3: Medium-Impact Bugs
+## Phase 3: Medium-Impact Bugs ✅ COMPLETED
 
-### 15. Login session fetch race condition
-- **File:** `src/app/login/page.tsx:43-45`
-- **Problem:** Immediately after `signIn("credentials", { redirect: false })`, the code calls `fetch("/api/auth/session")`. The session cookie may not be fully established yet, causing a null/empty session response and silent fallthrough.
-- **Fix:** Use `useSession` from `next-auth/react` which reactively subscribes to session state. Or add a retry loop with a short delay.
+### Execution Order (batched by dependency)
 
-### 16. Silent role fallthrough to `/student`
-- **File:** `src/app/login/page.tsx:48-51`
-- **Problem:** If `session?.user?.role` is `undefined` (race condition, malformed session), the `else` branch redirects to `/student` by default. An unauthenticated or misidentified user lands on the student dashboard.
-- **Fix:** Validate `role` is a recognized value before redirecting. Redirect to error or back to login if unrecognized.
+```
+Batch A (Infra + Route Robustness) ──► Batch B (Auth & Security) ──► Batch C (Data & Notifications)
+```
 
-### 17. Email enumeration via forgot-password API
-- **File:** `src/services/auth.service.ts:31-33` + `src/app/api/auth/forgot-password/route.ts`
-- **Problem:** Returns "No account found with that email" (400) for unknown emails vs `{ success: true }` (200) for known emails. Attackers can enumerate registered emails.
-- **Fix:** Always return HTTP 200 with a generic message. Log the specific error server-side.
+**Verification gates after each batch:**
+- `npm run typecheck` — zero errors (fix test mocks in prerequisite)
+- `npm test` — all 156+ tests passing (update mocks as needed)
+- `npm run lint` — passes
+- Manual smoke test of affected features
 
-### 18. Email enumeration via register API
-- **File:** `src/services/auth.service.ts:11-12` + `src/app/api/auth/register/route.ts`
-- **Problem:** Returns "Email already registered" (400) for existing emails. Attackers can enumerate registered emails.
-- **Fix:** Return a generic "Registration failed" message regardless of cause. Log the specific reason server-side.
+---
 
-### 19. Registration missing password confirmation
-- **File:** `src/app/register/page.tsx` + `src/validators/user.ts`
-- **Problem:** Only a single password field with no confirmation. Users can mistype and lock themselves out of their new account.
-- **Fix:** Add a password confirmation field to the form and a `refine` check in the Zod schema.
+### Prerequisites — Fix Test Typecheck Errors
 
-### 20. Missing Suspense boundary for `useSearchParams`
+#### T1. 10 test file type errors (mock mismatches) ✅
+- **Files:**
+  - `tests/helpers/mock-prisma.ts:9` — `'user'` does not exist on `MockPrismaClient`
+  - `tests/unit/services/comment.service.test.ts:83-84` — missing `.items` / `.total` on paginated results
+  - `tests/unit/services/milestone.service.test.ts:34,43` — missing `weight` property
+  - `tests/unit/services/notification.service.test.ts:34-35` — missing `.items` / `.total` on paginated results
+  - `tests/unit/services/user.service.test.ts:92-93` — missing `.items` / `.total` on paginated results
+- **Fix:** Update mock types and test assertions to match the current `PaginatedResult<T>` return shape and Prisma schema.
+- **Risk:** None — tests only; doesn't affect production code.
+
+---
+
+### Batch A — Infrastructure & Route Robustness
+
+#### 20. Missing Suspense boundary for `useSearchParams` ✅
 - **File:** `src/app/reset-password/page.tsx:17`
-- **Problem:** Calls `useSearchParams()` without a wrapping `<Suspense>` boundary. Next.js will throw during static generation or client rendering.
-- **Fix:** Wrap the component in `<Suspense>` (same pattern as `login/page.tsx`).
+- **Fix:** Wrap the component using `useSearchParams()` in `<Suspense>` (same pattern as `login/page.tsx`).
+- **Risk:** None — standard Next.js 14+ pattern.
+- **Verification:** Navigate to `/reset-password?token=abc` — no Suspense-related error.
 
-### 21. Six GET handlers missing try/catch on `paginationSchema.parse()`
+#### 21. Six GET handlers missing try/catch on `paginationSchema.parse()` ✅
 - **Files:** `classes/route.ts:36`, `projects/route.ts:33`, `groups/route.ts:34`, `comments/route.ts:38`, `notifications/route.ts:18`, `admin/users/route.ts:16`
-- **Problem:** Invalid query params (e.g., `?limit=abc`) cause an unhandled `ZodError` → generic 500 instead of proper 400 response.
-- **Fix:** Wrap `paginationSchema.parse()` in try/catch, return 400 on validation failure.
+- **Fix:** Wrap `paginationSchema.parse()` in try/catch, return 400 with validation error on `ZodError`.
+- **Risk:** Low — code is already outside try; wrapping is additive.
+- **Verification:** `GET /api/classes?limit=abc` returns 400 instead of 500.
 
-### 22. Five dynamic routes have `await params` outside try/catch
-- **Files:** `groups/[id]/leave/route.ts:10`, `groups/[id]/request-join/route.ts:10`, `groups/[id]/requests/route.ts:9`, `milestones/[id]/route.ts:34`, `groups/requests/[id]/route.ts:15`
-- **Problem:** If `params` fails to resolve, the error is completely unhandled (outside any try block).
-- **Fix:** Move `await params` inside the try block.
+#### 22. Two dynamic route handlers have `await params` outside try/catch ✅
+- **Files:** `groups/[id]/requests/route.ts:9` (GET, no try block at all), `milestones/[id]/route.ts:34` (DELETE, no try block)
+- **Notes:** The other 3 files listed originally (`groups/[id]/leave`, `groups/[id]/request-join`, `groups/requests/[id]`) already handle `await params` inside try/catch correctly. Included here for defensive re-verification.
+- **Fix:** Move `await params` into a try/catch block in both affected handlers.
+- **Risk:** Low — additive change.
+- **Verification:** Inject invalid route params — returns proper error instead of unhandled rejection.
 
-### 23. Inconsistent HTTP status codes (401 vs 403) for role failures
-- **Files:** `classes/route.ts:9`, `milestones/route.ts:9`, `milestones/[id]/route.ts:30`, `submissions/route.ts:29`, `groups/requests/[id]/route.ts:10` — return 401
-- **Files:** `admin/users/route.ts:9,24`, `admin/users/[id]/route.ts:9,32` — return 403
-- **Fix:** Unify to 403 Forbidden for authenticated users lacking permissions (401 is for missing/invalid auth).
+#### 23. Inconsistent HTTP status codes (401 vs 403) for role failures ✅
+- **Files (return 401, should be 403):** `classes/route.ts:9`, `milestones/route.ts:9`, `milestones/[id]/route.ts:30`, `submissions/route.ts:29`, `groups/requests/[id]/route.ts:10`
+- **Rationale:** 401 is for missing/invalid auth. 403 is for authenticated users lacking permissions.
+- **Risk:** Low — status code change only; no logic change.
+- **Verification:** AUTHENTICATED student calling TEACHER endpoints gets 403 (not 401). UNATHENTICATED callers still get 401.
 
-### 24. Milestones missing `orderBy: { order: "asc" }`
+---
+
+### Batch B — Auth & Security
+
+#### 15. Login session fetch race condition ✅
+- **File:** `src/app/login/page.tsx:43-45`
+- **Problem:** After `signIn("credentials", { redirect: false })`, calls `fetch("/api/auth/session")`. Session cookie may not be established yet.
+- **Fix:** Use `useSession` from `next-auth/react` which reactively subscribes to session state. Or add a retry loop with a short delay.
+- **Risk:** Medium — changes login flow. Must test manual login for all 3 roles.
+- **Verification:** Login as admin/teacher/student — redirects to correct dashboard every time, no null-session fallthrough.
+
+#### 16. Silent role fallthrough to `/student` ✅
+- **File:** `src/app/login/page.tsx:48-51`
+- **Problem:** If `session?.user?.role` is `undefined`, `else` branch redirects to `/student` by default.
+- **Fix:** Validate `role` is a recognized enum value before redirecting. Redirect back to login or show error if unrecognized.
+- **Risk:** Low — additive validation before redirect.
+- **Verification:** Malformed session or missing role → redirects to login with error toast, not to `/student`.
+
+#### 17. Email enumeration via forgot-password API ✅
+- **File:** `src/services/auth.service.ts:31-33` + `src/app/api/auth/forgot-password/route.ts`
+- **Fix:** Always return HTTP 200 with `{ success: true }`. Log the specific error server-side (unknown email vs send failure).
+- **Risk:** Low — only changes response behavior.
+- **Verification:** Known and unknown emails both get 200 `{ success: true }`.
+
+#### 18. Email enumeration via register API ✅
+- **File:** `src/services/auth.service.ts:11-12` + `src/app/api/auth/register/route.ts`
+- **Fix:** Return generic "Registration failed" message for all errors. Log specific reason server-side.
+- **Risk:** Low — only changes response message.
+- **Verification:** Registering with an existing email returns generic error, not "Email already registered".
+
+#### 19. Registration missing password confirmation ✅
+- **File:** `src/app/register/page.tsx` + `src/validators/user.ts`
+- **Fix:** Add password confirmation field to the form and a `refine` check in the Zod schema.
+- **Risk:** Low — additive field + validation.
+- **Verification:** Form submission with mismatched passwords shows validation error before reaching API.
+
+#### 39. `deleteMilestone` has no authorization ✅
+- **File:** `src/services/milestone.service.ts:73-76`
+- **Fix:** Add same authorization check as `updateMilestone` (teacher/class ownership or ADMIN).
+- **Risk:** Medium — previously any authenticated user could delete milestones. Verify teacher workflows.
+- **Verification:** Student calling `DELETE /api/milestones/:id` gets 403. Teacher can delete their own class milestones.
+
+---
+
+### Batch C — Data & Notifications
+
+#### 24. Milestones missing `orderBy: { order: "asc" }` ✅
 - **File:** `src/repositories/milestone.repository.ts:10`
-- **Problem:** `findManyByProject` returns milestones in arbitrary order (likely insertion order), but milestones have an `order` field.
-- **Fix:** Add `orderBy: { order: "asc" }` to the query.
+- **Fix:** Add `orderBy: { order: "asc" }` to `findManyByProject` query.
+- **Risk:** None — single line addition.
+- **Verification:** Milestones displayed in correct `order` sequence on project detail page.
 
-### 25. `notification.repository.ts` always limits to 50 items
+#### 25. `notification.repository.ts` always limits to 50 items ✅
 - **File:** `src/repositories/notification.repository.ts:11`
-- **Problem:** `take: pagination?.limit ?? 50` — when `pagination` is undefined, the fallback is `50`, not "all". Inconsistent with other repositories that use `...(pagination ? buildPaginationArgs(pagination) : {})`.
-- **Fix:** Use the same pattern as other repositories: conditionally apply pagination args.
+- **Fix:** Use conditional pagination same as other repos: `...(pagination ? buildPaginationArgs(pagination) : {})`.
+- **Risk:** Low — aligns with existing pattern in all other repositories.
+- **Verification:** Notifications list returns all items when no pagination is specified (uncapped query).
 
-### 26. `github.service.ts` silently swallows sync errors
+#### 26. `github.service.ts` silently swallows sync errors ✅
 - **File:** `src/services/github.service.ts:49-51,67-69`
-- **Problem:** `catch { results.push(repo) }` — when a repo sync fails, the original stale data is pushed into results with no indication of failure. The caller can't distinguish success from failure.
-- **Fix:** Include an error flag or status in the result, or emit an error log. At minimum, log the error.
+- **Fix:** Log the error server-side and include an error flag/status in the result entry instead of pushing stale data silently.
+- **Risk:** Low — logging is additive. Callers that check the result shape may need minor updates.
+- **Verification:** Failed repo sync is visible in server logs and distinguishable in the returned results.
 
-### 27. Submission/comment notifications missing `link`
-- **File:** `src/services/submission.service.ts:45-52`
-- **Problem:** Notification created on milestone submission doesn't include a `link` field, so the recipient can't navigate to the relevant page.
-- **Fix:** Add `link: \`/${recipientRole}/projects/${projectId}\`` to the notification.
+#### 27. Submission notification missing `link` ✅
+- **File:** `src/services/submission.service.ts:53-60` (inside `submitMilestone` transaction)
+- **Fix:** Add `link: \`/${recipientRole}/projects/${projectId}\`` to the notification create call (same pattern as Phase 2 Bug 10).
+- **Risk:** Low — additive field.
+- **Verification:** Teacher receives submission notification with clickable link to the student's project.
 
-### 28. `createGroup`/`leaveGroup` send no notification
+#### 28. `createGroup`/`leaveGroup` send no notification ✅
 - **File:** `src/services/group.service.ts:10,69`
-- **Problem:** When a group is created or a member leaves, no notification is sent to the class teacher or group members.
-- **Fix:** Add appropriate notification creation to both methods.
+- **Fix:** Add notification creation inside both methods (pattern matches `joinGroupByCode` which already sends notifications).
+- **Risk:** Low — follows existing notification pattern.
+- **Verification:** Creating a group notifies the class teacher. Leaving a group notifies group members/teacher.
+
+---
+
+### Post-Phase-3 Verification
+
+1. `npm run typecheck` — zero errors (prerequisite fixes applied)
+2. `npm run lint` — passes
+3. `npm test` — all 156+ tests pass
+4. Manual E2E walkthrough:
+   - Login as admin/teacher/student — correct role-based redirect
+   - Forgot password with unknown email — generic success response
+   - Register with existing email — generic error message
+   - Register with mismatched passwords — client-side validation error
+   - `GET /api/classes?limit=abc` — returns 400 instead of 500
+   - DELETE milestone as student — returns 403
+   - Milestones display in correct order
+   - Submission notification includes working link
+   - Group creation sends notification to teacher
+   - Group leave sends notification to members
+   - Notifications list returns all items (no artificial 50-cap)
 
 ---
 
@@ -290,37 +371,32 @@ Batch A (Infra + Quick wins) ──► Batch B (UI/UX fixes) ──► Batch C (
 - **Files:** `src/repositories/index.ts`, `src/services/index.ts`
 - **Fix:** Add missing exports.
 
-### 39. `deleteMilestone` has no authorization
-- **File:** `src/services/milestone.service.ts:73-76`
-- **Problem:** Any authenticated user can delete any milestone.
-- **Fix:** Add same authorization check as `createMilestone` (teacher/class ownership).
-
-### 40. `getUnreadCount` type mismatch
+### 39. `getUnreadCount` type mismatch
 - **File:** `src/services/notification.service.ts:14`
 - **Problem:** `isRead: false` may not match `Prisma.NotificationWhereInput` types.
 - **Fix:** Explicitly type or satisfy Prisma's type expectations.
 
-### 41. `joinGroupByCode` doesn't check class group membership
+### 40. `joinGroupByCode` doesn't check class group membership
 - **File:** `src/services/group.service.ts:47-67`
 - **Problem:** User can join multiple groups within the same class via different invite codes.
 - **Fix:** Add check: user must not already be in a group for that class.
 
-### 42. `approveJoinRequest` race condition
+### 41. `approveJoinRequest` race condition
 - **File:** `src/services/group.service.ts:96-110`
 - **Problem:** Doesn't check if group is full or user already a member between request creation and approval.
 - **Fix:** Add validation before approving.
 
-### 43. `Record<string, unknown>` + `as Prisma.XCreateInput` casts
+### 42. `Record<string, unknown>` + `as Prisma.XCreateInput` casts
 - **Files:** All repository files
 - **Problem:** Bypasses all TypeScript type safety. Misspelled field names or wrong types only caught at runtime.
 - **Fix:** Use proper Prisma-generated types in repository method signatures.
 
-### 44. `markRead` updates state without checking API response
+### 43. `markRead` updates state without checking API response
 - **File:** `notifications/page.tsx:92-95`
 - **Problem:** Optimistic update with no rollback — if API fails, notification visually appears read but isn't.
 - **Fix:** Check `res.ok` before updating state.
 
-### 45. Redundant `setLoading(false)` call
+### 44. Redundant `setLoading(false)` call
 - **File:** `student-projects-content.tsx:82,87`
 - **Fix:** Remove the redundant call in the try block (line 82) — `finally` block handles it.
 
@@ -332,12 +408,22 @@ Batch A (Infra + Quick wins) ──► Batch B (UI/UX fixes) ──► Batch C (
 Phase 1 (Critical) ──► Phase 2 (High) ──► Phase 3 (Medium) ──► Phase 4 (Low)
 ```
 
+**Phase 3 internal order:**
+```
+Prerequisites (test typecheck fixes)
+  └──► Batch A (Infra & Route Robustness)
+       └──► Batch B (Auth & Security)
+            └──► Batch C (Data & Notifications)
+```
+
 **Verification gates between phases:**
 - `npm run typecheck` — must pass with no errors
-- `npm test` — all 153 tests must pass (update mocks/tests as needed)
+- `npm test` — all 156+ tests must pass (update mocks/tests as needed)
+- `npm run lint` — passes
 - Manual smoke test of affected features
 
 **Risk notes:**
-- Adding Prisma transactions may require test mock updates (transactions need `$transaction` mock)
-- Authorization changes in `gradeSubmission` may break existing teacher workflows — verify with test accounts
-- SSE fix requires stream format to remain compatible with existing frontend EventSource consumers
+- Phase 2 restructured some notification patterns — verify Phase 3 notification additions (Bugs 27, 28) are compatible
+- Authorization changes in `deleteMilestone` (Bug 39) mirror Phase 1 Bug 4 pattern — verify teacher workflows
+- Login flow changes (Bugs 15, 16) must be tested across all 3 roles — high regression risk
+- Email enumeration fixes (Bugs 17, 18) change API response contracts — verify frontend handles generic errors gracefully

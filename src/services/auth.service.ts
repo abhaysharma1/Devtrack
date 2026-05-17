@@ -9,7 +9,8 @@ export const authService = {
   async register(input: RegisterInput) {
     const existing = await userRepository.findByEmail(input.email)
     if (existing) {
-      throw new Error("Email already registered")
+      console.log(`Registration attempt with existing email: ${input.email}`)
+      throw new Error("Registration failed")
     }
 
     const passwordHash = await bcrypt.hash(input.password, 12)
@@ -29,7 +30,8 @@ export const authService = {
   async initiatePasswordReset(input: ForgotPasswordInput) {
     const user = await userRepository.findByEmail(input.email)
     if (!user) {
-      throw new Error("No account found with that email")
+      console.log(`Password reset requested for unknown email: ${input.email}`)
+      return { success: true }
     }
 
     const token = crypto.randomBytes(32).toString("hex")

@@ -7,7 +7,7 @@ export const milestoneRepository = {
   },
 
   async findManyByProject(projectId: string) {
-    return prisma.milestone.findMany({ where: { projectId } })
+    return prisma.milestone.findMany({ where: { projectId }, orderBy: { order: "asc" } })
   },
 
   async create(data: Record<string, unknown>) {

@@ -31,7 +31,7 @@ describe("milestoneService", () => {
       mockMilestoneRepo.create.mockResolvedValue({ id: "m1", title: "Setup" })
 
       const result = await milestoneService.createMilestone(
-        { projectId: "p1", title: "Setup", order: 1 },
+        { projectId: "p1", title: "Setup", order: 1, weight: 1 },
         "t1"
       )
       expect(result.title).toBe("Setup")
@@ -40,7 +40,7 @@ describe("milestoneService", () => {
     it("throws when project not found", async () => {
       mockMilestoneRepo.findById.mockResolvedValue(null)
       await expect(
-        milestoneService.createMilestone({ projectId: "bad", title: "Setup", order: 1 }, "t1")
+        milestoneService.createMilestone({ projectId: "bad", title: "Setup", order: 1, weight: 1 }, "t1")
       ).rejects.toThrow("Project not found")
     })
   })
@@ -81,10 +81,33 @@ describe("milestoneService", () => {
   })
 
   describe("deleteMilestone", () => {
-    it("deletes milestone", async () => {
+    it("deletes milestone when user is teacher", async () => {
+      mockMilestoneRepo.findById.mockResolvedValue({
+        id: "m1",
+        projectId: "p1",
+        project: { ownerId: "s1", class: { teacherId: "t1" } },
+      } as any)
       mockMilestoneRepo.delete.mockResolvedValue({})
-      const result = await milestoneService.deleteMilestone("m1")
+      const result = await milestoneService.deleteMilestone("m1", "t1", "TEACHER")
       expect(result.success).toBe(true)
+    })
+
+    it("throws when milestone not found", async () => {
+      mockMilestoneRepo.findById.mockResolvedValue(null)
+      await expect(
+        milestoneService.deleteMilestone("bad", "t1", "TEACHER")
+      ).rejects.toThrow("Milestone not found")
+    })
+
+    it("throws when user is not authorized", async () => {
+      mockMilestoneRepo.findById.mockResolvedValue({
+        id: "m1",
+        projectId: "p1",
+        project: { ownerId: "s1", class: { teacherId: "t1" } },
+      } as any)
+      await expect(
+        milestoneService.deleteMilestone("m1", "s2", "STUDENT")
+      ).rejects.toThrow("Forbidden")
     })
   })
 })

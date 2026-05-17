@@ -1,3 +1,4 @@
+import type { PaginatedResult } from "@/validators/common"
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
 const mockTxClient = vi.hoisted(() => ({
@@ -79,7 +80,7 @@ describe("commentService", () => {
       mockCommentRepo.findManyByProject.mockResolvedValue([{ id: "c1" }])
       mockCommentRepo.count.mockResolvedValue(1)
 
-      const result = await commentService.getComments("p1", { limit: 10 })
+      const result = await commentService.getComments("p1", { limit: 10 }) as PaginatedResult<unknown>
       expect(result.items).toHaveLength(1)
       expect(result.total).toBe(1)
     })

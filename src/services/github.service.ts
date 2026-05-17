@@ -47,7 +47,8 @@ export const githubService = {
         const updated = await this.syncRepository(repo.id)
         results.push(updated)
       } catch {
-        results.push(repo)
+        console.error(`Failed to sync repository ${repo.fullName} (${repo.id})`)
+        results.push({ ...repo, syncError: true })
       }
     }
     return results
@@ -65,7 +66,8 @@ export const githubService = {
         })
         results.push(updated)
       } catch {
-        results.push(repo)
+        console.error(`Failed to sync all repository ${repo.fullName} (${repo.id})`)
+        results.push({ ...repo, syncError: true })
       }
     }
     return results

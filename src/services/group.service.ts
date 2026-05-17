@@ -23,6 +23,18 @@ export const groupService = {
 
     await groupRepository.addMember(group.id, userId, "leader")
 
+    if (classExists.teacherId && classExists.teacherId !== userId) {
+      const notification = await notificationRepository.create({
+        type: "GROUP_CREATED",
+        title: "New Group Created",
+        message: `A new group "${group.name}" was created in your class`,
+        recipientId: classExists.teacherId,
+        senderId: userId,
+        link: `/teacher/groups/${group.id}`,
+      })
+      pushEvent(classExists.teacherId, "notification", notification)
+    }
+
     return group
   },
 
@@ -84,6 +96,19 @@ export const groupService = {
     if (!group) throw new Error("Group not found")
 
     await groupRepository.removeMember(groupId, userId)
+
+    if (group.creatorId && group.creatorId !== userId) {
+      const notification = await notificationRepository.create({
+        type: "GROUP_LEFT",
+        title: "Member Left Group",
+        message: `A member left "${group.name}"`,
+        recipientId: group.creatorId,
+        senderId: userId,
+        link: `/teacher/groups/${group.id}`,
+      })
+      pushEvent(group.creatorId, "notification", notification)
+    }
+
     return { success: true }
   },
 

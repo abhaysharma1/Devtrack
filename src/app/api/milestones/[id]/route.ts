@@ -27,11 +27,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
-  if (!session || (session.user.role !== "TEACHER" && session.user.role !== "ADMIN")) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
+  if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
 
-  const { id } = await params
-  const result = await milestoneService.deleteMilestone(id)
-  return NextResponse.json(result)
+  try {
+    const { id } = await params
+    const result = await milestoneService.deleteMilestone(id, session.user.id, session.user.role)
+    return NextResponse.json(result)
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
 }

@@ -8,9 +8,7 @@ export const notificationRepository = {
     return prisma.notification.findMany({
       where: { recipientId: userId },
       orderBy: { createdAt: "desc" },
-      take: pagination?.limit ?? 50,
-      skip: pagination?.cursor ? 1 : undefined,
-      cursor: pagination?.cursor ? { id: pagination.cursor } : undefined,
+      ...(pagination ? buildPaginationArgs(pagination) : {}),
     })
   },
 

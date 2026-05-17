@@ -48,7 +48,7 @@ describe("authService", () => {
       mockUserRepo.findByEmail.mockResolvedValue(null)
       mockUserRepo.create.mockResolvedValue({ id: "1" })
 
-      const result = await authService.register({ name: "Alice", email: "a@test.com", password: "secret123", role: "STUDENT" })
+      const result = await authService.register({ name: "Alice", email: "a@test.com", password: "secret123", confirmPassword: "secret123", role: "STUDENT" })
 
       expect(result.success).toBe(true)
       expect(result.userId).toBe("1")
@@ -58,8 +58,8 @@ describe("authService", () => {
     it("throws when email already registered", async () => {
       mockUserRepo.findByEmail.mockResolvedValue({ id: "1" })
 
-      await expect(authService.register({ name: "Alice", email: "a@test.com", password: "secret123", role: "STUDENT" }))
-        .rejects.toThrow("Email already registered")
+      await expect(authService.register({ name: "Alice", email: "a@test.com", password: "secret123", confirmPassword: "secret123", role: "STUDENT" }))
+        .rejects.toThrow("Registration failed")
     })
   })
 
@@ -74,11 +74,11 @@ describe("authService", () => {
       expect(mockPrisma.verificationToken.create).toHaveBeenCalled()
     })
 
-    it("throws when email not found", async () => {
+    it("returns success when email not found (anti-enumeration)", async () => {
       mockUserRepo.findByEmail.mockResolvedValue(null)
 
-      await expect(authService.initiatePasswordReset({ email: "unknown@test.com" }))
-        .rejects.toThrow("No account found with that email")
+      const result = await authService.initiatePasswordReset({ email: "unknown@test.com" })
+      expect(result.success).toBe(true)
     })
   })
 

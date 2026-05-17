@@ -70,7 +70,21 @@ export const milestoneService = {
     return updated
   },
 
-  async deleteMilestone(id: string) {
+  async deleteMilestone(id: string, userId: string, userRole: string) {
+    const milestone = await milestoneRepository.findById(id, {
+      project: { include: { class: true } },
+    })
+    if (!milestone) {
+      throw new Error("Milestone not found")
+    }
+
+    const isTeacher = userRole === "TEACHER" || userRole === "ADMIN"
+    const isOwner = (milestone as any).project.ownerId === userId
+
+    if (!isTeacher && !isOwner) {
+      throw new Error("Forbidden")
+    }
+
     await milestoneRepository.delete(id)
     return { success: true }
   },
