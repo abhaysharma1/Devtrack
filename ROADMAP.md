@@ -1,4 +1,4 @@
-# SPMS — Development Roadmap
+# DevTrack — Development Roadmap
 
 > Current state: ~99% feature completion. Phases 1–4 complete — testing stack (Vitest + Playwright, 153 unit tests), CI/CD pipeline, Docker setup, and monitoring foundation implemented. Phase 5 items remain.
 

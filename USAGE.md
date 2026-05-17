@@ -1,6 +1,6 @@
-# SPMS Usage Guide
+# DevTrack Usage Guide
 
-This document provides detailed instructions on how to use the Software Project Management System (SPMS).
+This document provides detailed instructions on how to use the Software Project Management System (DevTrack).
 
 ## Table of Contents
 

@@ -4,7 +4,7 @@ function getHeaders() {
   const token = process.env.GITHUB_ACCESS_TOKEN
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
-    "User-Agent": "spms/1.0",
+    "User-Agent": "DevTrack/1.0",
   }
   if (token) headers.Authorization = `Bearer ${token}`
   return headers

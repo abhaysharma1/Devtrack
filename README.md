@@ -1,4 +1,4 @@
-# SPMS - Software Project Management System
+# DevTrack - Software Project Management System
 
 A full-stack web application designed to manage student software projects, track progress through milestones, and evaluate student work. It provides role-based dashboards for administrators, teachers, and students within an academic setting.
 
@@ -85,10 +85,10 @@ After seeding the database, use these credentials:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@spms.edu` | `password123` |
-| Teacher | `john.doe@spms.edu` | `password123` |
-| Teacher | `jane.smith@spms.edu` | `password123` |
-| Student | `student1@spms.edu` - `student20@spms.edu` | `password123` |
+| Admin | `admin@devtrack.edu` | `password123` |
+| Teacher | `john.doe@devtrack.edu` | `password123` |
+| Teacher | `jane.smith@devtrack.edu` | `password123` |
+| Student | `student1@devtrack.edu` - `student20@devtrack.edu` | `password123` |
 
 ## Available Scripts
 
@@ -108,7 +108,7 @@ After seeding the database, use these credentials:
 ## Project Structure
 
 ```
-spms/
+devtrack/
 ├── prisma/
 │   ├── schema.prisma          # Database schema (14 models)
 │   └── seed.ts                # Database seeding script
@@ -198,7 +198,7 @@ The application uses 14 models:
 For production, switch from SQLite to PostgreSQL:
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/spms"
+DATABASE_URL="postgresql://user:password@localhost:5432/devtrack"
 ```
 
 ### Build

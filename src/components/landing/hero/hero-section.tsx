@@ -207,7 +207,7 @@ export function HeroSection() {
                 <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
               </div>
-              <span className="ml-2 text-xs text-muted-foreground">SPMS Dashboard</span>
+              <span className="ml-2 text-xs text-muted-foreground">DevTrack Dashboard</span>
             </div>
 
             <div className="grid grid-cols-4 gap-px bg-white/5">

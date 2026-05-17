@@ -1,9 +1,9 @@
 export const SITE_CONFIG = {
-  name: "SPMS",
+  name: "DevTrack",
   tagline: "Software Project Management System",
   description:
     "The modern platform for academic software project management. Track projects, collaborate in teams, and evaluate with powerful analytics.",
-  url: "https://spms.dev",
+  url: "https://devtrack.dev",
 }
 
 export const NAV_LINKS = [
@@ -181,14 +181,14 @@ export const PRICING_PLANS = [
 
 export const FAQ_DATA = [
   {
-    question: "How does SPMS integrate with GitHub?",
+    question: "How does DevTrack integrate with GitHub?",
     answer:
-      "SPMS connects directly with GitHub via OAuth. It automatically tracks commits, pull requests, issues, and code review activity for all student repositories within a classroom. Teachers get real-time visibility into contribution patterns without any manual effort.",
+      "DevTrack connects directly with GitHub via OAuth. It automatically tracks commits, pull requests, issues, and code review activity for all student repositories within a classroom. Teachers get real-time visibility into contribution patterns without any manual effort.",
   },
   {
-    question: "Can I use SPMS with my existing LMS?",
+    question: "Can I use DevTrack with my existing LMS?",
     answer:
-      "Yes. SPMS supports integration with Canvas, Blackboard, and Moodle. Grades and roster data sync automatically, making it easy to adopt alongside your existing institution tools.",
+      "Yes. DevTrack supports integration with Canvas, Blackboard, and Moodle. Grades and roster data sync automatically, making it easy to adopt alongside your existing institution tools.",
   },
   {
     question: "Is there a free plan for educators?",
@@ -198,29 +198,29 @@ export const FAQ_DATA = [
   {
     question: "How does grading work?",
     answer:
-      "SPMS uses a flexible rubric system. Instructors define criteria, weightage, and grading scales. The system auto-populates GitHub contribution data, peer reviews, and milestone completion for objective assessment. Manual adjustments are always possible.",
+      "DevTrack uses a flexible rubric system. Instructors define criteria, weightage, and grading scales. The system auto-populates GitHub contribution data, peer reviews, and milestone completion for objective assessment. Manual adjustments are always possible.",
   },
   {
     question: "Can students form their own groups?",
     answer:
-      "Yes. SPMS supports multiple group formation models: instructor-assigned, student self-select, and algorithm-based smart grouping that balances skills and experience levels.",
+      "Yes. DevTrack supports multiple group formation models: instructor-assigned, student self-select, and algorithm-based smart grouping that balances skills and experience levels.",
   },
   {
     question: "What analytics are available?",
     answer:
-      "SPMS provides comprehensive analytics including team velocity charts, individual contribution heatmaps, code quality metrics, milestone burndown, and submission timelines. All data exports to CSV/PDF.",
+      "DevTrack provides comprehensive analytics including team velocity charts, individual contribution heatmaps, code quality metrics, milestone burndown, and submission timelines. All data exports to CSV/PDF.",
   },
   {
     question: "Is my data secure?",
     answer:
-      "Security is a top priority. SPMS uses encryption at rest and in transit, SOC 2 compliant infrastructure, and role-based access control. Enterprise plans offer on-premise deployment options.",
+      "Security is a top priority. DevTrack uses encryption at rest and in transit, SOC 2 compliant infrastructure, and role-based access control. Enterprise plans offer on-premise deployment options.",
   },
 ]
 
 export const TESTIMONIALS = [
   {
     quote:
-      "SPMS transformed how we teach software engineering. The GitHub integration alone saved us dozens of hours per semester, and students love the transparency.",
+      "DevTrack transformed how we teach software engineering. The GitHub integration alone saved us dozens of hours per semester, and students love the transparency.",
     author: "Dr. Sarah Chen",
     role: "Professor of Computer Science",
     institution: "Stanford University",
@@ -236,7 +236,7 @@ export const TESTIMONIALS = [
   },
   {
     quote:
-      "Our students ship better projects because SPMS makes collaboration and GitHub workflows natural. It's become an essential part of our curriculum.",
+      "Our students ship better projects because DevTrack makes collaboration and GitHub workflows natural. It's become an essential part of our curriculum.",
     author: "Dr. Emily Nakamura",
     role: "Dept. Chair, Computer Science",
     institution: "UC Berkeley",
@@ -244,7 +244,7 @@ export const TESTIMONIALS = [
   },
   {
     quote:
-      "Setting up group projects used to be a nightmare. SPMS handles everything from team formation to final grading. It's a game-changer.",
+      "Setting up group projects used to be a nightmare. DevTrack handles everything from team formation to final grading. It's a game-changer.",
     author: "Prof. Michael Okafor",
     role: "Senior Lecturer",
     institution: "Georgia Tech",
@@ -260,7 +260,7 @@ export const TESTIMONIALS = [
   },
   {
     quote:
-      "SPMS bridges the gap between academic project management and real-world software development practices. Essential for any modern CS department.",
+      "DevTrack bridges the gap between academic project management and real-world software development practices. Essential for any modern CS department.",
     author: "Prof. Alex Kim",
     role: "Director of Undergraduate Studies",
     institution: "Carnegie Mellon University",

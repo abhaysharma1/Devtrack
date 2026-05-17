@@ -32,7 +32,7 @@ async function main() {
   // Admin
   const admin = await prisma.user.create({
     data: {
-      email: "admin@spms.edu",
+      email: "admin@devtrack.edu",
       name: "System Admin",
       passwordHash: password,
       role: "ADMIN",
@@ -44,7 +44,7 @@ async function main() {
   // Teachers
   const teacher1 = await prisma.user.create({
     data: {
-      email: "john.doe@spms.edu",
+      email: "john.doe@devtrack.edu",
       name: "Dr. John Doe",
       passwordHash: password,
       role: "TEACHER",
@@ -55,7 +55,7 @@ async function main() {
 
   const teacher2 = await prisma.user.create({
     data: {
-      email: "jane.smith@spms.edu",
+      email: "jane.smith@devtrack.edu",
       name: "Prof. Jane Smith",
       passwordHash: password,
       role: "TEACHER",
@@ -78,7 +78,7 @@ async function main() {
     studentNames.map((name, i) =>
       prisma.user.create({
         data: {
-          email: `student${i + 1}@spms.edu`,
+          email: `student${i + 1}@devtrack.edu`,
           name,
           passwordHash: password,
           role: "STUDENT",
@@ -192,7 +192,7 @@ async function main() {
           classId: class1.id,
           tags: JSON.stringify(["web", "fullstack", "academic"]),
           dueDate: new Date(2026, 5, 30 + i * 7),
-          repoUrl: `https://github.com/spms-org/${title.toLowerCase().replace(/\s+/g, "-")}`,
+          repoUrl: `https://github.com/devtrack-org/${title.toLowerCase().replace(/\s+/g, "-")}`,
         },
       })
     )
@@ -350,10 +350,10 @@ async function main() {
 
   console.log("\n✅ Seed complete!")
   console.log("\n📋 Test Accounts:")
-  console.log("   Admin:  admin@spms.edu / password123")
-  console.log("   Teacher: john.doe@spms.edu / password123")
-  console.log("   Teacher: jane.smith@spms.edu / password123")
-  console.log("   Student: student1@spms.edu / password123 (through student20)")
+  console.log("   Admin:  admin@devtrack.edu / password123")
+  console.log("   Teacher: john.doe@devtrack.edu / password123")
+  console.log("   Teacher: jane.smith@devtrack.edu / password123")
+  console.log("   Student: student1@devtrack.edu / password123 (through student20)")
 }
 
 main()

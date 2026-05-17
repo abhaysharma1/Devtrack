@@ -69,7 +69,7 @@ export function CTASection() {
           </h2>
 
           <p className="mx-auto mb-10 max-w-xl text-lg text-muted-foreground">
-            Join hundreds of institutions already using SPMS to manage, track, and evaluate student
+            Join hundreds of institutions already using DevTrack to manage, track, and evaluate student
             software projects.
           </p>
 

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'})
 
 export const metadata: Metadata = {
-  title: "SPMS - Software Project Management System",
+  title: "DevTrack - Software Project Management System",
   description: "Manage student software projects, track progress, and evaluate work",
 }
 

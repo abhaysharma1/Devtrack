@@ -26,7 +26,7 @@ export default function LoadingPage() {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-xl font-semibold">SPMS</h2>
+          <h2 className="text-xl font-semibold">DevTrack</h2>
           <p className="text-sm text-muted-foreground mt-1">Loading your dashboard...</p>
         </motion.div>
 

@@ -33,7 +33,7 @@ export function TestimonialsSection() {
             and students
           </h2>
           <p className="text-lg text-muted-foreground">
-            Hear from the institutions that use SPMS to transform their software engineering programs.
+            Hear from the institutions that use DevTrack to transform their software engineering programs.
           </p>
         </motion.div>
 
