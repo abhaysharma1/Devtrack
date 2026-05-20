@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 import { getInitials, getStatusColor, formatDate, formatDateRelative } from "@/lib/utils"
 import { toast } from "sonner"
-import { MilestoneList } from "@/components/features/milestones/milestone-list"
+import { MilestoneList, MilestoneCreateForm } from "@/components/features/milestones"
 import { GitHubRepoManager } from "@/components/features/github/github-repo-manager"
 import type { Milestone, MilestoneSubmission, Comment, GitHubRepository, ActivityLog, Group, GroupMember } from "@prisma/client"
 
@@ -150,7 +150,12 @@ export function TeacherProjectDetail({ project, userId }: { project: ProjectDeta
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Milestones</CardTitle></CardHeader>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Milestones</CardTitle>
+                <MilestoneCreateForm projectId={project.id} />
+              </div>
+            </CardHeader>
             <CardContent>
               <MilestoneList
                 milestones={project.milestones}

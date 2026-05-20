@@ -1,14 +1,25 @@
 import { milestoneRepository } from "@/repositories/milestone.repository"
+import { projectRepository } from "@/repositories/project.repository"
 import { activityLogRepository } from "@/repositories/activity-log.repository"
 import type { CreateMilestoneInput, UpdateMilestoneInput } from "@/validators/milestone"
 
 export const milestoneService = {
   async createMilestone(input: CreateMilestoneInput, userId: string) {
-    const project = await milestoneRepository.findById(input.projectId, {
-      project: { include: { class: true } },
+    const project = await projectRepository.findById(input.projectId, {
+      class: true,
+      group: { include: { members: true } },
     })
-    if (!project || (project as any).project?.class?.teacherId !== userId) {
+    if (!project) {
       throw new Error("Project not found")
+    }
+
+    const p = project as unknown as { class: { teacherId: string }; ownerId: string; group: { members: { userId: string }[] } | null }
+    const isTeacher = p.class.teacherId === userId
+    const isOwner = p.ownerId === userId
+    const isGroupMember = p.group?.members.some((m) => m.userId === userId) ?? false
+
+    if (!isTeacher && !isOwner && !isGroupMember) {
+      throw new Error("Forbidden")
     }
 
     return milestoneRepository.create({
@@ -23,7 +34,7 @@ export const milestoneService = {
 
   async updateMilestone(id: string, input: UpdateMilestoneInput, userId: string, userRole: string) {
     const milestone = await milestoneRepository.findById(id, {
-      project: { include: { class: true } },
+      project: { include: { class: true, group: { include: { members: true } } } },
     })
     if (!milestone) {
       throw new Error("Milestone not found")
@@ -31,8 +42,9 @@ export const milestoneService = {
 
     const isTeacher = userRole === "TEACHER" || userRole === "ADMIN"
     const isOwner = (milestone as any).project.ownerId === userId
+    const isGroupMember = (milestone as any).project.group?.members.some((m: { userId: string }) => m.userId === userId) ?? false
 
-    if (!isTeacher && !isOwner) {
+    if (!isTeacher && !isOwner && !isGroupMember) {
       throw new Error("Forbidden")
     }
 

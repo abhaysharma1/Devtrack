@@ -18,7 +18,24 @@ export const approveRequestSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
 })
 
+export const updateGroupSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  maxSize: z.number().int().min(1).max(20).optional(),
+  isActive: z.boolean().optional(),
+})
+
+export const updateMemberRoleSchema = z.object({
+  role: z.enum(["leader", "member"]),
+})
+
+export const updateProjectStatusSchema = z.object({
+  status: z.enum(["APPROVED", "REJECTED"]),
+})
+
 export type GroupInput = z.infer<typeof groupSchema>
 export type JoinGroupInput = z.infer<typeof joinGroupSchema>
 export type JoinRequestInput = z.infer<typeof joinRequestSchema>
 export type ApproveRequestInput = z.infer<typeof approveRequestSchema>
+export type UpdateGroupInput = z.infer<typeof updateGroupSchema>
+export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>
+export type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>

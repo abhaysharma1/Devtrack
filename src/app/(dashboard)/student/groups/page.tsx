@@ -12,11 +12,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Plus, Search, Users, LogOut, KeyRound, Loader2, ExternalLink } from "lucide-react"
+import { Plus, Search, Users, LogOut, KeyRound, Loader2, ExternalLink, Crown } from "lucide-react"
 import { getInitials, getStatusColor } from "@/lib/utils"
 import { toast } from "sonner"
 
 interface GroupMember {
+  id: string
+  userId: string
+  role: string
   user: { id: string; name: string; image: string | null }
 }
 
@@ -44,6 +47,7 @@ export default function StudentGroupsPage() {
   const [inviteCode, setInviteCode] = useState("")
   const [selectedClass, setSelectedClass] = useState("")
   const [search, setSearch] = useState("")
+  const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadData()
@@ -142,6 +146,7 @@ export default function StudentGroupsPage() {
       const res = await fetch(`/api/groups/${groupId}/request-join`, { method: "POST" })
       if (!res.ok) { const err = await res.json(); toast.error(err.error || "Failed to request"); return }
       toast.success("Join request sent!")
+      setPendingRequests((prev) => new Set(prev).add(groupId))
     } catch {
       toast.error("Something went wrong")
     }
@@ -151,6 +156,11 @@ export default function StudentGroupsPage() {
     g.name.toLowerCase().includes(search.toLowerCase()) ||
     g.class.name.toLowerCase().includes(search.toLowerCase())
   )
+
+  function getProjectLabel(status: string) {
+    if (status === "PROPOSED") return "Proposal Pending"
+    return status.replace("_", " ")
+  }
 
   return (
     <div className="space-y-6">
@@ -263,7 +273,7 @@ export default function StudentGroupsPage() {
                         <Badge variant="outline" className="text-xs font-mono">{group.inviteCode}</Badge>
                         {group.project && (
                           <Badge className={getStatusColor(group.project.status)}>
-                            {group.project.status.replace("_", " ")}
+                            {getProjectLabel(group.project.status)}
                           </Badge>
                         )}
                       </div>
@@ -279,19 +289,25 @@ export default function StudentGroupsPage() {
                     <ScrollArea className="h-[100px] mb-3">
                       <div className="space-y-2">
                         {group.members.map((m) => (
-                          <div key={m.user.id} className="flex items-center gap-2">
+                          <div key={m.id || m.user.id} className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
                               <AvatarImage src={m.user.image || ""} />
                               <AvatarFallback className="text-[10px]">{getInitials(m.user.name)}</AvatarFallback>
                             </Avatar>
                             <span className="text-sm">{m.user.name}</span>
+                            {m.role === "leader" && <Crown className="h-3 w-3 text-amber-500" />}
                           </div>
                         ))}
                       </div>
                     </ScrollArea>
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => handleLeaveGroup(group.id, group.name)}>
-                      <LogOut className="mr-1 h-3 w-3" /> Leave Group
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push(`/student/groups/${group.id}`)}>
+                        <ExternalLink className="mr-1 h-3 w-3" /> View
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleLeaveGroup(group.id, group.name)}>
+                        <LogOut className="mr-1 h-3 w-3" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -313,35 +329,44 @@ export default function StudentGroupsPage() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredAvailable.map((group) => (
-                <Card key={group.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base">{group.name}</CardTitle>
-                        <CardDescription>{group.class.code}</CardDescription>
+              {filteredAvailable.map((group) => {
+                const hasPendingRequest = pendingRequests.has(group.id)
+                return (
+                  <Card key={group.id}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-base">{group.name}</CardTitle>
+                          <CardDescription>{group.class.code}</CardDescription>
+                        </div>
+                        <Badge variant="secondary">{group.members.length}/{group.maxSize}</Badge>
                       </div>
-                      <Badge variant="secondary">{group.members.length}/{group.maxSize}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {group.project && (
-                      <div className="mb-3">
-                        <p className="text-sm font-medium">{group.project.title}</p>
-                        <Badge className={getStatusColor(group.project.status)}>
-                          {group.project.status.replace("_", " ")}
-                        </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      {group.project && (
+                        <div className="mb-3">
+                          <p className="text-sm font-medium">{group.project.title}</p>
+                          <Badge className={getStatusColor(group.project.status)}>
+                            {getProjectLabel(group.project.status)}
+                          </Badge>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        {hasPendingRequest ? (
+                          <Button size="sm" variant="secondary" className="flex-1" disabled>
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Request Pending
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="default" className="flex-1" onClick={() => handleRequestJoin(group.id)}>
+                            Request Join
+                          </Button>
+                        )}
                       </div>
-                    )}
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="default" className="flex-1" onClick={() => handleRequestJoin(group.id)}>
-                        Request Join
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">Code: <span className="font-mono">{group.inviteCode}</span></p>
-                  </CardContent>
-                </Card>
-              ))}
+                      <p className="text-xs text-muted-foreground mt-2">Code: <span className="font-mono">{group.inviteCode}</span></p>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
         </TabsContent>

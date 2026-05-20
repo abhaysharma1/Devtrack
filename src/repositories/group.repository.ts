@@ -9,7 +9,7 @@ export const groupRepository = {
       where,
       include: {
         class: { select: { name: true, code: true } },
-        members: { include: { user: { select: { id: true, name: true, image: true } } } },
+        members: { include: { user: { select: { id: true, name: true, image: true, email: true } } } },
         project: { select: { id: true, title: true, status: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -19,6 +19,30 @@ export const groupRepository = {
 
   async findById(id: string) {
     return prisma.group.findUnique({ where: { id } })
+  },
+
+  async findByIdWithDetails(id: string) {
+    return prisma.group.findUnique({
+      where: { id },
+      include: {
+        class: { select: { id: true, name: true, code: true, teacherId: true } },
+        creator: { select: { id: true, name: true, image: true } },
+        members: {
+          include: { user: { select: { id: true, name: true, image: true, email: true } } },
+          orderBy: { joinedAt: "asc" },
+        },
+        project: {
+          include: {
+            milestones: { orderBy: { order: "asc" } },
+            _count: { select: { milestones: true, comments: true } },
+          },
+        },
+        joinRequests: {
+          include: { user: { select: { id: true, name: true, image: true, email: true } } },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    })
   },
 
   async findByInviteCode(code: string) {
@@ -53,6 +77,14 @@ export const groupRepository = {
     })
   },
 
+  async updateMemberRole(groupId: string, userId: string, role: string) {
+    return prisma.groupMember.update({
+      where: { groupId_userId: { groupId, userId } },
+      data: { role },
+      include: { user: { select: { id: true, name: true, image: true } } },
+    })
+  },
+
   async count(where?: Prisma.GroupWhereInput) {
     return prisma.group.count({ where })
   },
@@ -77,5 +109,9 @@ export const groupRepository = {
       where: { id },
       data: data as Prisma.GroupJoinRequestUpdateInput,
     })
+  },
+
+  async deleteGroup(id: string) {
+    return prisma.group.delete({ where: { id } })
   },
 }

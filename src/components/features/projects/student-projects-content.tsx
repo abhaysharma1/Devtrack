@@ -98,7 +98,7 @@ export function StudentProjectsContent({
           <DialogTrigger className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground h-8 gap-1.5 px-2.5 text-sm font-medium hover:bg-primary/80 cursor-pointer">
             <Plus className="h-4 w-4" /> New Project
           </DialogTrigger>
-          <DialogContent className="relative">
+          <DialogContent className="">
             {loading && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/80 backdrop-blur-[1px]">
                 <div className="flex flex-col items-center gap-2">

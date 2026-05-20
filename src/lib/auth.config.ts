@@ -1,4 +1,11 @@
 import type { NextAuthConfig } from "next-auth"
+import { NextResponse } from "next/server"
+
+const roleDashboard: Record<string, string> = {
+  ADMIN: "/admin",
+  TEACHER: "/teacher",
+  STUDENT: "/student",
+}
 
 export const authConfig: NextAuthConfig = {
   pages: {
@@ -22,7 +29,15 @@ export const authConfig: NextAuthConfig = {
         pathname.startsWith("/forgot-password") || pathname.startsWith("/reset-password") || pathname.startsWith("/verify")
       const isApiAuth = pathname.startsWith("/api/auth")
 
-      if (isAuthPage || isApiAuth) return true
+      if (isApiAuth) return true
+
+      if (isAuthPage) {
+        if (isLoggedIn) {
+          const dashboard = roleDashboard[role ?? ""] ?? "/student"
+          return NextResponse.redirect(new URL(dashboard, nextUrl))
+        }
+        return true
+      }
 
       if (!isLoggedIn) return false
 

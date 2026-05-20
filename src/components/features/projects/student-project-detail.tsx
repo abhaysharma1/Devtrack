@@ -19,6 +19,7 @@ import { getInitials, getStatusColor, formatDate, formatDateRelative } from "@/l
 import { toast } from "sonner"
 import { UploadButton } from "@/lib/uploadthing"
 import { GitHubRepoManager } from "@/components/features/github/github-repo-manager"
+import { MilestoneCreateForm, MilestoneEditForm } from "@/components/features/milestones"
 import type { Milestone, MilestoneSubmission, Comment, GitHubRepository, Group, GroupMember, FileAttachment } from "@prisma/client"
 
 interface StudentProjectDetailProps {
@@ -172,7 +173,12 @@ export function StudentProjectDetail({ project, userId }: StudentProjectDetailPr
 
           {/* Milestones */}
           <Card>
-            <CardHeader><CardTitle>Milestones</CardTitle></CardHeader>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Milestones</CardTitle>
+                <MilestoneCreateForm projectId={project.id} />
+              </div>
+            </CardHeader>
             <CardContent className="space-y-3">
               {project.milestones.map((ms) => {
                 const submission = ms.submissions[0]
@@ -191,6 +197,7 @@ export function StudentProjectDetail({ project, userId }: StudentProjectDetailPr
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">#{ms.order} {ms.title}</span>
                             <Badge className={getStatusColor(ms.status)}>{ms.status.replace("_", " ")}</Badge>
+                            <MilestoneEditForm milestone={ms} />
                           </div>
                           {ms.description && <p className="text-xs text-muted-foreground mt-1">{ms.description}</p>}
                           {ms.dueDate && <p className="text-xs text-muted-foreground mt-1">Due: {formatDate(ms.dueDate)}</p>}

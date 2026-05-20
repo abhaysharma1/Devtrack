@@ -7,10 +7,17 @@ const mockMilestoneRepo = vi.hoisted(() => ({
   delete: vi.fn(),
 }))
 
+const mockProjectRepo = vi.hoisted(() => ({
+  findById: vi.fn(),
+}))
+
 const mockActivityLogRepo = vi.hoisted(() => ({ create: vi.fn() }))
 
 vi.mock("@/repositories/milestone.repository", () => ({
   milestoneRepository: mockMilestoneRepo,
+}))
+vi.mock("@/repositories/project.repository", () => ({
+  projectRepository: mockProjectRepo,
 }))
 vi.mock("@/repositories/activity-log.repository", () => ({
   activityLogRepository: mockActivityLogRepo,
@@ -25,8 +32,10 @@ describe("milestoneService", () => {
 
   describe("createMilestone", () => {
     it("creates milestone when project found and user is teacher", async () => {
-      mockMilestoneRepo.findById.mockResolvedValue({
-        project: { class: { teacherId: "t1" } },
+      mockProjectRepo.findById.mockResolvedValue({
+        class: { teacherId: "t1" },
+        ownerId: "o1",
+        group: null,
       } as any)
       mockMilestoneRepo.create.mockResolvedValue({ id: "m1", title: "Setup" })
 
@@ -38,7 +47,7 @@ describe("milestoneService", () => {
     })
 
     it("throws when project not found", async () => {
-      mockMilestoneRepo.findById.mockResolvedValue(null)
+      mockProjectRepo.findById.mockResolvedValue(null)
       await expect(
         milestoneService.createMilestone({ projectId: "bad", title: "Setup", order: 1, weight: 1 }, "t1")
       ).rejects.toThrow("Project not found")
